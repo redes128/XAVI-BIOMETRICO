@@ -1,1 +1,821 @@
 
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sistema Biométrico — XAVI</title>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+  <!-- Google Fonts: JetBrains Mono + Syne -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ===== RESET & BASE ===== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-0:    #080b0f;
+      --bg-1:    #0d1117;
+      --bg-2:    #131920;
+      --bg-3:    #1a2230;
+      --bg-card: #111820;
+      --border:  rgba(255,255,255,0.07);
+      --border-bright: rgba(255,255,255,0.13);
+
+      --green:   #00e676;
+      --green-d: #00c853;
+      --green-bg: rgba(0,230,118,0.08);
+      --red:     #ff4444;
+      --red-d:   #cc0000;
+      --red-bg:  rgba(255,68,68,0.08);
+      --amber:   #ffab00;
+      --amber-bg: rgba(255,171,0,0.08);
+      --blue:    #40c4ff;
+      --blue-bg: rgba(64,196,255,0.08);
+
+      --text-0:  #f0f4f8;
+      --text-1:  #8fa3b8;
+      --text-2:  #4a6278;
+      --accent:  #00e676;
+
+      --font-display: 'Syne', sans-serif;
+      --font-mono:    'JetBrains Mono', monospace;
+
+      --r-sm: 6px;
+      --r-md: 10px;
+      --r-lg: 16px;
+    }
+
+    html { background: var(--bg-0); color: var(--text-0); font-family: var(--font-display); }
+    body { min-height: 100vh; }
+
+    /* ===== SCROLLBAR ===== */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: var(--bg-1); }
+    ::-webkit-scrollbar-thumb { background: var(--bg-3); border-radius: 4px; }
+
+    /* ===== LAYOUT ===== */
+    .shell {
+      display: grid;
+      grid-template-rows: auto 1fr;
+      min-height: 100vh;
+    }
+
+    /* ===== TOPBAR ===== */
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 32px;
+      height: 60px;
+      background: var(--bg-1);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .topbar-left {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .logo-mark {
+      width: 34px;
+      height: 34px;
+      background: var(--green);
+      border-radius: var(--r-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .logo-mark svg { width: 18px; height: 18px; }
+    .logo-text {
+      font-size: 15px;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      color: var(--text-0);
+    }
+    .logo-text span { color: var(--green); }
+    .topbar-badge {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      background: var(--green-bg);
+      color: var(--green);
+      border: 1px solid rgba(0,230,118,0.2);
+      margin-left: 4px;
+    }
+    .topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+    .conn-indicator {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 12px;
+      font-family: var(--font-mono);
+      color: var(--text-1);
+    }
+    .conn-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--text-2);
+    }
+    .conn-dot.live {
+      background: var(--green);
+      box-shadow: 0 0 8px var(--green);
+      animation: pulse-dot 2s infinite;
+    }
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+    .time-display {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--text-2);
+    }
+
+    /* ===== MAIN CONTENT ===== */
+    .main { padding: 28px 32px 40px; max-width: 1400px; margin: 0 auto; width: 100%; }
+
+    /* ===== STATS ROW ===== */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+    .stat-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      padding: 20px 22px;
+      position: relative;
+      overflow: hidden;
+      transition: border-color 0.2s;
+    }
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+    }
+    .stat-card.green::before { background: linear-gradient(90deg, var(--green), transparent); }
+    .stat-card.red::before   { background: linear-gradient(90deg, var(--red), transparent); }
+    .stat-card.amber::before { background: linear-gradient(90deg, var(--amber), transparent); }
+    .stat-card.blue::before  { background: linear-gradient(90deg, var(--blue), transparent); }
+    .stat-card:hover { border-color: var(--border-bright); }
+
+    .stat-label {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-2);
+      margin-bottom: 10px;
+    }
+    .stat-value {
+      font-size: 36px;
+      font-weight: 800;
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+    .stat-card.green .stat-value { color: var(--green); }
+    .stat-card.red   .stat-value { color: var(--red); }
+    .stat-card.amber .stat-value { color: var(--amber); }
+    .stat-card.blue  .stat-value { color: var(--blue); }
+    .stat-sub {
+      font-size: 12px;
+      color: var(--text-2);
+      font-family: var(--font-mono);
+    }
+    .stat-icon {
+      position: absolute;
+      right: 18px;
+      top: 18px;
+      opacity: 0.08;
+      font-size: 42px;
+    }
+
+    /* ===== CONTENT GRID ===== */
+    .content-grid {
+      display: grid;
+      grid-template-columns: 1fr 320px;
+      gap: 16px;
+      align-items: start;
+    }
+
+    /* ===== PANEL ===== */
+    .panel {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      overflow: hidden;
+    }
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+    .panel-title {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-0);
+    }
+    .panel-actions {
+      display: flex;
+      gap: 8px;
+    }
+    .btn-filter {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: var(--r-sm);
+      border: 1px solid var(--border-bright);
+      background: transparent;
+      color: var(--text-1);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-filter:hover { background: var(--bg-3); color: var(--text-0); }
+    .btn-filter.active {
+      background: var(--bg-3);
+      color: var(--text-0);
+      border-color: rgba(255,255,255,0.25);
+    }
+    .live-badge {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--green);
+    }
+    .live-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--green);
+      animation: pulse-dot 1.5s infinite;
+    }
+
+    /* ===== TABLE ===== */
+    .table-wrap { overflow-x: auto; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    thead tr {
+      border-bottom: 1px solid var(--border);
+    }
+    th {
+      padding: 10px 16px;
+      text-align: left;
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-2);
+    }
+    td {
+      padding: 13px 16px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr {
+      transition: background 0.12s;
+    }
+    tbody tr:hover { background: rgba(255,255,255,0.025); }
+    tbody tr.new-row {
+      animation: row-in 0.4s ease;
+    }
+    @keyframes row-in {
+      from { background: rgba(0,230,118,0.12); }
+      to   { background: transparent; }
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 500;
+      padding: 3px 9px;
+      border-radius: 4px;
+    }
+    .badge.ok  { background: var(--green-bg); color: var(--green); border: 1px solid rgba(0,230,118,0.2); }
+    .badge.err { background: var(--red-bg);   color: var(--red);   border: 1px solid rgba(255,68,68,0.2); }
+    .badge-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+
+    .mono { font-family: var(--font-mono); font-size: 12px; color: var(--text-1); }
+    .name-cell { font-weight: 500; color: var(--text-0); }
+    .id-pill {
+      display: inline-block;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      padding: 1px 7px;
+      border-radius: 4px;
+      background: var(--bg-3);
+      color: var(--text-1);
+      border: 1px solid var(--border-bright);
+    }
+    .conf-bar-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .conf-bar {
+      height: 4px;
+      border-radius: 2px;
+      flex: 1;
+      background: var(--bg-3);
+      max-width: 60px;
+    }
+    .conf-fill {
+      height: 100%;
+      border-radius: 2px;
+      background: var(--green);
+      transition: width 0.4s ease;
+    }
+    .conf-num { font-family: var(--font-mono); font-size: 11px; color: var(--text-1); min-width: 28px; }
+
+    /* ===== SIDEBAR ===== */
+    .sidebar-panel { display: flex; flex-direction: column; gap: 16px; }
+
+    /* ===== MINI LOG ===== */
+    .log-list { padding: 0; }
+    .log-item {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      padding: 12px 18px;
+      border-bottom: 1px solid var(--border);
+      transition: background 0.12s;
+    }
+    .log-item:last-child { border-bottom: none; }
+    .log-item:hover { background: rgba(255,255,255,0.02); }
+    .log-item-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .log-name { font-size: 13px; font-weight: 500; color: var(--text-0); }
+    .log-time { font-family: var(--font-mono); font-size: 11px; color: var(--text-2); }
+    .log-sub  { font-family: var(--font-mono); font-size: 11px; color: var(--text-2); }
+
+    /* ===== DEVICE CARD ===== */
+    .device-card {
+      padding: 18px;
+    }
+    .device-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 9px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 13px;
+    }
+    .device-row:last-child { border-bottom: none; }
+    .device-key { color: var(--text-2); font-size: 12px; }
+    .device-val { font-family: var(--font-mono); font-size: 12px; color: var(--text-1); }
+
+    /* ===== EMPTY / LOADER ===== */
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 50px 20px;
+      gap: 12px;
+      color: var(--text-2);
+    }
+    .spinner {
+      width: 28px; height: 28px;
+      border: 2px solid var(--bg-3);
+      border-top-color: var(--green);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .empty-text { font-size: 13px; font-family: var(--font-mono); }
+
+    /* ===== FILTER ACTIVE ===== */
+    #filter-all.active, #filter-ok.active, #filter-err.active {
+      background: var(--bg-3);
+      color: var(--text-0);
+    }
+
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 1024px) {
+      .content-grid { grid-template-columns: 1fr; }
+      .stats-grid   { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 600px) {
+      .topbar { padding: 0 16px; }
+      .main   { padding: 16px; }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+      .stat-value { font-size: 28px; }
+      th, td { padding: 10px 10px; }
+    }
+  </style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- ===== TOPBAR ===== -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <div class="logo-mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#080b0f" stroke-width="2.5" stroke-linecap="round">
+          <path d="M12 2C9.5 2 7.5 4 7.5 6.5c0 1.5.7 2.8 1.8 3.7L8 22h8l-1.3-11.8C15.8 9.3 16.5 8 16.5 6.5 16.5 4 14.5 2 12 2z"/>
+          <circle cx="12" cy="6.5" r="1.5"/>
+        </svg>
+      </div>
+      <span class="logo-text">XAVI<span>BIO</span></span>
+      <span class="topbar-badge">v2.1</span>
+    </div>
+    <div class="topbar-right">
+      <div class="conn-indicator">
+        <div class="conn-dot" id="conn-dot"></div>
+        <span id="conn-text">Conectando...</span>
+      </div>
+      <div class="time-display" id="clock">--:--:--</div>
+    </div>
+  </header>
+
+  <!-- ===== MAIN ===== -->
+  <main class="main">
+
+    <!-- Stats -->
+    <div class="stats-grid">
+      <div class="stat-card green">
+        <div class="stat-label">Accesos permitidos</div>
+        <div class="stat-value" id="stat-ok">—</div>
+        <div class="stat-sub" id="stat-ok-pct">— % del total</div>
+        <div class="stat-icon">✓</div>
+      </div>
+      <div class="stat-card red">
+        <div class="stat-label">Accesos denegados</div>
+        <div class="stat-value" id="stat-err">—</div>
+        <div class="stat-sub" id="stat-err-pct">— % del total</div>
+        <div class="stat-icon">✕</div>
+      </div>
+      <div class="stat-card amber">
+        <div class="stat-label">Total de eventos</div>
+        <div class="stat-value" id="stat-total">—</div>
+        <div class="stat-sub" id="stat-last">Último: —</div>
+        <div class="stat-icon">#</div>
+      </div>
+      <div class="stat-card blue">
+        <div class="stat-label">Confianza promedio</div>
+        <div class="stat-value" id="stat-conf">—</div>
+        <div class="stat-sub">puntos del sensor</div>
+        <div class="stat-icon">~</div>
+      </div>
+    </div>
+
+    <!-- Content grid -->
+    <div class="content-grid">
+
+      <!-- Main table panel -->
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">Registro de accesos</span>
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div class="live-badge">
+              <div class="live-dot"></div>
+              TIEMPO REAL
+            </div>
+            <div class="panel-actions">
+              <button class="btn-filter active" id="filter-all" onclick="setFilter('all')">Todos</button>
+              <button class="btn-filter" id="filter-ok"  onclick="setFilter('ok')">Permitidos</button>
+              <button class="btn-filter" id="filter-err" onclick="setFilter('err')">Denegados</button>
+            </div>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Estado</th>
+                <th>ID</th>
+                <th>Nombre</th>
+                <th>CI</th>
+                <th>Fecha y hora</th>
+                <th>Confianza</th>
+                <th>Dispositivo</th>
+              </tr>
+            </thead>
+            <tbody id="log-tbody">
+              <tr>
+                <td colspan="7">
+                  <div class="empty-state">
+                    <div class="spinner"></div>
+                    <span class="empty-text">Conectando a Firebase...</span>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Sidebar -->
+      <div class="sidebar-panel">
+
+        <!-- Últimos accesos rápidos -->
+        <div class="panel">
+          <div class="panel-header">
+            <span class="panel-title">Últimos eventos</span>
+          </div>
+          <div class="log-list" id="log-mini"></div>
+        </div>
+
+        <!-- Info del dispositivo -->
+        <div class="panel">
+          <div class="panel-header">
+            <span class="panel-title">Dispositivo</span>
+          </div>
+          <div class="device-card">
+            <div class="device-row">
+              <span class="device-key">ID</span>
+              <span class="device-val" id="dev-id">—</span>
+            </div>
+            <div class="device-row">
+              <span class="device-key">IP</span>
+              <span class="device-val" id="dev-ip">—</span>
+            </div>
+            <div class="device-row">
+              <span class="device-key">Último ping</span>
+              <span class="device-val" id="dev-ping">—</span>
+            </div>
+            <div class="device-row">
+              <span class="device-key">Base de datos</span>
+              <span class="device-val" style="color:var(--green)">Firebase RT</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- ===== SCRIPTS ===== -->
+<script>
+  // ================================================
+  //  CONFIGURACIÓN FIREBASE
+  //  Solo cambia estos valores si tu proyecto cambia
+  // ================================================
+  const firebaseConfig = {
+    apiKey:            "AIzaSyDPwk9l2PxAdQJXWQMHSewVIBs2R2eACN4",
+    authDomain:        "xavi-biometrico.firebaseapp.com",
+    projectId:         "xavi-biometrico",
+    storageBucket:     "xavi-biometrico.firebasestorage.app",
+    messagingSenderId: "545216091867",
+    appId:             "1:545216091867:web:864f18b6d5b892f31c5efe",
+    databaseURL:       "https://xavi-biometrico-default-rtdb.firebaseio.com"
+  };
+
+  // ================================================
+  //  ESTADO GLOBAL
+  // ================================================
+  let allRecords = [];   // todos los registros de Firebase
+  let activeFilter = 'all';
+
+  // ================================================
+  //  RELOJ
+  // ================================================
+  function updateClock() {
+    const now = new Date();
+    document.getElementById('clock').textContent =
+      now.toLocaleTimeString('es-BO', { hour12: false });
+  }
+  setInterval(updateClock, 1000);
+  updateClock();
+
+  // ================================================
+  //  FORMATEO DE FECHA
+  // ================================================
+  function fmtDate(rec) {
+    if (rec.timestamp_local && rec.timestamp_local !== 'SinHora') return rec.timestamp_local;
+    if (rec.timestamp_unix && rec.timestamp_unix > 0) {
+      const d = new Date(rec.timestamp_unix * 1000);
+      return d.toLocaleString('es-BO', { day:'2-digit', month:'2-digit', year:'numeric',
+        hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false });
+    }
+    if (rec.timestamp_iso) return rec.timestamp_iso.replace('T', ' ');
+    return '—';
+  }
+
+  function fmtTimeShort(rec) {
+    if (rec.timestamp_local && rec.timestamp_local !== 'SinHora') {
+      return rec.timestamp_local.split(' ')[1] || rec.timestamp_local;
+    }
+    if (rec.timestamp_unix && rec.timestamp_unix > 0) {
+      const d = new Date(rec.timestamp_unix * 1000);
+      return d.toLocaleTimeString('es-BO', { hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false });
+    }
+    return '—';
+  }
+
+  // ================================================
+  //  RENDERIZAR TABLA PRINCIPAL
+  // ================================================
+  function renderTable(records, isNew = false) {
+    const tbody = document.getElementById('log-tbody');
+
+    if (records.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="7">
+        <div class="empty-state">
+          <span class="empty-text">Sin registros aún. Espera el primer acceso del ESP32.</span>
+        </div></td></tr>`;
+      return;
+    }
+
+    // Ordenar por timestamp descendente
+    const sorted = [...records].sort((a, b) => (b.timestamp_unix || 0) - (a.timestamp_unix || 0));
+
+    tbody.innerHTML = sorted.map((rec, idx) => {
+      const ok      = rec.permitido === true || rec.estado === 'PERMITIDO';
+      const nombre  = (rec.nombre  && rec.nombre  !== '---') ? rec.nombre  : '—';
+      const ci      = (rec.ci      && rec.ci      !== '---') ? rec.ci      : '—';
+      const conf    = rec.confianza || 0;
+      const confPct = Math.min(100, conf);
+      const dev     = rec.dispositivo || '—';
+      const uid     = rec.usuario_id !== undefined ? rec.usuario_id : '—';
+      const newCls  = (isNew && idx === 0) ? 'new-row' : '';
+
+      return `<tr class="${newCls}">
+        <td><span class="badge ${ok ? 'ok' : 'err'}">
+          <span class="badge-dot"></span>${ok ? 'PERMITIDO' : 'DENEGADO'}
+        </span></td>
+        <td><span class="id-pill">#${uid}</span></td>
+        <td class="name-cell">${nombre}</td>
+        <td class="mono">${ci}</td>
+        <td class="mono">${fmtDate(rec)}</td>
+        <td>
+          <div class="conf-bar-wrap">
+            <div class="conf-bar"><div class="conf-fill" style="width:${confPct}%;${ok?'':'background:var(--red);'}"></div></div>
+            <span class="conf-num">${conf}</span>
+          </div>
+        </td>
+        <td class="mono">${dev}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  // ================================================
+  //  RENDERIZAR MINI LOG (SIDEBAR)
+  // ================================================
+  function renderMini(records) {
+    const el = document.getElementById('log-mini');
+    const sorted = [...records].sort((a, b) => (b.timestamp_unix || 0) - (a.timestamp_unix || 0));
+    const recent = sorted.slice(0, 6);
+
+    if (recent.length === 0) {
+      el.innerHTML = `<div class="log-item"><span class="empty-text">Sin eventos aún</span></div>`;
+      return;
+    }
+
+    el.innerHTML = recent.map(rec => {
+      const ok     = rec.permitido === true || rec.estado === 'PERMITIDO';
+      const nombre = (rec.nombre && rec.nombre !== '---') ? rec.nombre : 'Desconocido';
+      const t      = fmtTimeShort(rec);
+      const color  = ok ? 'var(--green)' : 'var(--red)';
+      return `<div class="log-item">
+        <div class="log-item-top">
+          <span class="log-name" style="color:${color}">${nombre}</span>
+          <span class="log-time">${t}</span>
+        </div>
+        <span class="log-sub">${ok ? 'Acceso permitido' : 'Acceso denegado'} · ID #${rec.usuario_id ?? '—'}</span>
+      </div>`;
+    }).join('');
+  }
+
+  // ================================================
+  //  ACTUALIZAR STATS
+  // ================================================
+  function updateStats(records) {
+    const total   = records.length;
+    const okCount = records.filter(r => r.permitido === true || r.estado === 'PERMITIDO').length;
+    const errCount= total - okCount;
+    const confs   = records.filter(r => r.confianza > 0).map(r => r.confianza);
+    const avgConf = confs.length ? Math.round(confs.reduce((a,b) => a+b, 0) / confs.length) : 0;
+
+    document.getElementById('stat-ok').textContent    = okCount;
+    document.getElementById('stat-err').textContent   = errCount;
+    document.getElementById('stat-total').textContent = total;
+    document.getElementById('stat-conf').textContent  = avgConf;
+
+    const okPct  = total ? Math.round(okCount  / total * 100) : 0;
+    const errPct = total ? Math.round(errCount / total * 100) : 0;
+    document.getElementById('stat-ok-pct').textContent  = `${okPct}% del total`;
+    document.getElementById('stat-err-pct').textContent = `${errPct}% del total`;
+
+    // Último evento
+    const sorted = [...records].sort((a,b) => (b.timestamp_unix||0)-(a.timestamp_unix||0));
+    if (sorted.length > 0) {
+      document.getElementById('stat-last').textContent = 'Último: ' + fmtTimeShort(sorted[0]);
+    }
+  }
+
+  // ================================================
+  //  ACTUALIZAR PANEL DISPOSITIVO
+  // ================================================
+  function updateDevice(records) {
+    const sorted = [...records].sort((a,b) => (b.timestamp_unix||0)-(a.timestamp_unix||0));
+    if (sorted.length === 0) return;
+    const last = sorted[0];
+    document.getElementById('dev-id').textContent   = last.dispositivo || '—';
+    document.getElementById('dev-ip').textContent   = last.ip_dispositivo || '—';
+    document.getElementById('dev-ping').textContent = fmtDate(last);
+  }
+
+  // ================================================
+  //  FILTRO
+  // ================================================
+  function setFilter(f) {
+    activeFilter = f;
+    document.querySelectorAll('.btn-filter').forEach(b => b.classList.remove('active'));
+    document.getElementById('filter-' + f).classList.add('active');
+    applyFilter();
+  }
+
+  function applyFilter() {
+    let filtered = allRecords;
+    if (activeFilter === 'ok') {
+      filtered = allRecords.filter(r => r.permitido === true || r.estado === 'PERMITIDO');
+    } else if (activeFilter === 'err') {
+      filtered = allRecords.filter(r => r.permitido !== true && r.estado !== 'PERMITIDO');
+    }
+    renderTable(filtered);
+  }
+
+  // ================================================
+  //  FIREBASE — LISTENER EN TIEMPO REAL
+  // ================================================
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+
+  let firstLoad = true;
+
+  db.ref('/accesos').on('value',
+    (snapshot) => {
+      // Conectado exitosamente
+      document.getElementById('conn-dot').classList.add('live');
+      document.getElementById('conn-text').textContent = 'En línea';
+
+      const raw = snapshot.val();
+
+      if (!raw) {
+        allRecords = [];
+        renderTable([]);
+        renderMini([]);
+        updateStats([]);
+        return;
+      }
+
+      // Convertir objeto Firebase a array
+      allRecords = Object.entries(raw).map(([key, val]) => ({ _key: key, ...val }));
+
+      updateStats(allRecords);
+      updateDevice(allRecords);
+      renderMini(allRecords);
+
+      // En la primera carga no hay animación de "nuevo"
+      const isNew = !firstLoad;
+      firstLoad = false;
+      applyFilter();
+    },
+    (error) => {
+      // Error de conexión
+      document.getElementById('conn-dot').classList.remove('live');
+      document.getElementById('conn-text').textContent = 'Sin conexión';
+      console.error('Firebase error:', error);
+
+      document.getElementById('log-tbody').innerHTML = `<tr><td colspan="7">
+        <div class="empty-state">
+          <span class="empty-text" style="color:var(--red)">Error al conectar con Firebase. Revisa las reglas de seguridad.</span>
+        </div></td></tr>`;
+    }
+  );
+</script>
+</body>
+</html>

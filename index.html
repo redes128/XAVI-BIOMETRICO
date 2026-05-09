@@ -1,821 +1,2314 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Sistema Biométrico — XAVI</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yanet Mendocina - Sistema de Distribución v3.0</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
 
-  <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <style>
+        :root {
+            --primary: #1a3c5e;
+            --secondary: #2e6fa8;
+            --success: #27ae60;
+            --warning: #f39c12;
+            --danger: #e74c3c;
+            --light: #f8f9fa;
+            --dark: #2c3e50;
+            --white: #ffffff;
+            --border: #ddd;
+            --shadow: 0 2px 15px rgba(0,0,0,0.1);
+            --radius: 12px;
+        }
 
-  <!-- Google Fonts: JetBrains Mono + Syne -->
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
-  <style>
-    /* ===== RESET & BASE ===== */
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(135deg, #e8f0fe 0%, #f5f7fa 50%, #e8f0fe 100%);
+            color: var(--dark);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
 
-    :root {
-      --bg-0:    #080b0f;
-      --bg-1:    #0d1117;
-      --bg-2:    #131920;
-      --bg-3:    #1a2230;
-      --bg-card: #111820;
-      --border:  rgba(255,255,255,0.07);
-      --border-bright: rgba(255,255,255,0.13);
+        .header {
+            background: linear-gradient(135deg, #0d2137, #1a3c5e, #2e6fa8);
+            color: white;
+            padding: 1rem;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        .header h1 { font-size: clamp(1.2rem, 3vw, 1.8rem); }
+        .header .user-info { font-size: 0.85rem; opacity: 0.9; margin-top: 0.3rem; }
 
-      --green:   #00e676;
-      --green-d: #00c853;
-      --green-bg: rgba(0,230,118,0.08);
-      --red:     #ff4444;
-      --red-d:   #cc0000;
-      --red-bg:  rgba(255,68,68,0.08);
-      --amber:   #ffab00;
-      --amber-bg: rgba(255,171,0,0.08);
-      --blue:    #40c4ff;
-      --blue-bg: rgba(64,196,255,0.08);
+        .btn-logout {
+            background: rgba(255,255,255,0.15);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            padding: 0.4rem 1rem;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            margin-top: 0.5rem;
+            transition: all 0.3s;
+        }
+        .btn-logout:hover { background: rgba(255,255,255,0.25); }
 
-      --text-0:  #f0f4f8;
-      --text-1:  #8fa3b8;
-      --text-2:  #4a6278;
-      --accent:  #00e676;
+        .container { max-width: 1300px; margin: 0 auto; padding: 1rem; }
 
-      --font-display: 'Syne', sans-serif;
-      --font-mono:    'JetBrains Mono', monospace;
+        /* LOGIN */
+        .login-container {
+            max-width: 420px;
+            margin: 60px auto;
+            background: white;
+            padding: 2.5rem 2rem;
+            border-radius: var(--radius);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+            text-align: center;
+        }
+        .login-container .logo { font-size: 4rem; margin-bottom: 0.5rem; }
+        .login-container h2 { color: var(--primary); font-size: 1.6rem; }
+        .login-container input {
+            width: 100%;
+            padding: 0.9rem;
+            margin: 0.5rem 0;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+        .login-container input:focus { outline: none; border-color: var(--secondary); }
+        .btn-login {
+            width: 100%;
+            padding: 0.9rem;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 0.8rem;
+        }
+        .btn-login:hover { background: #0d2137; }
+        .login-error { color: var(--danger); margin-top: 0.8rem; font-size: 0.9rem; display: none; }
 
-      --r-sm: 6px;
-      --r-md: 10px;
-      --r-lg: 16px;
-    }
+        /* TABS */
+        .tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.3rem;
+            margin-bottom: 1.2rem;
+            background: white;
+            border-radius: var(--radius);
+            padding: 0.4rem;
+            box-shadow: var(--shadow);
+        }
+        .tab-btn {
+            flex: 1;
+            min-width: 85px;
+            padding: 0.7rem 0.4rem;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.78rem;
+            transition: all 0.3s;
+            color: #666;
+        }
+        .tab-btn.active { background: var(--primary); color: white; }
+        .tab-btn:hover:not(.active) { background: #e8f0fe; }
 
-    html { background: var(--bg-0); color: var(--text-0); font-family: var(--font-display); }
-    body { min-height: 100vh; }
+        .tab-content {
+            display: none;
+            background: white;
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            box-shadow: var(--shadow);
+            animation: fadeIn 0.4s ease;
+        }
+        .tab-content.active { display: block; }
 
-    /* ===== SCROLLBAR ===== */
-    ::-webkit-scrollbar { width: 4px; }
-    ::-webkit-scrollbar-track { background: var(--bg-1); }
-    ::-webkit-scrollbar-thumb { background: var(--bg-3); border-radius: 4px; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
 
-    /* ===== LAYOUT ===== */
-    .shell {
-      display: grid;
-      grid-template-rows: auto 1fr;
-      min-height: 100vh;
-    }
+        .section-title {
+            color: var(--primary);
+            border-bottom: 3px solid var(--secondary);
+            padding-bottom: 0.5rem;
+            margin-bottom: 1.2rem;
+            font-size: 1.3rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
 
-    /* ===== TOPBAR ===== */
-    .topbar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 32px;
-      height: 60px;
-      background: var(--bg-1);
-      border-bottom: 1px solid var(--border);
-      position: sticky;
-      top: 0;
-      z-index: 100;
-    }
-    .topbar-left {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-    }
-    .logo-mark {
-      width: 34px;
-      height: 34px;
-      background: var(--green);
-      border-radius: var(--r-sm);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .logo-mark svg { width: 18px; height: 18px; }
-    .logo-text {
-      font-size: 15px;
-      font-weight: 800;
-      letter-spacing: 0.06em;
-      color: var(--text-0);
-    }
-    .logo-text span { color: var(--green); }
-    .topbar-badge {
-      font-family: var(--font-mono);
-      font-size: 11px;
-      padding: 2px 8px;
-      border-radius: 4px;
-      background: var(--green-bg);
-      color: var(--green);
-      border: 1px solid rgba(0,230,118,0.2);
-      margin-left: 4px;
-    }
-    .topbar-right {
-      display: flex;
-      align-items: center;
-      gap: 20px;
-    }
-    .conn-indicator {
-      display: flex;
-      align-items: center;
-      gap: 7px;
-      font-size: 12px;
-      font-family: var(--font-mono);
-      color: var(--text-1);
-    }
-    .conn-dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: var(--text-2);
-    }
-    .conn-dot.live {
-      background: var(--green);
-      box-shadow: 0 0 8px var(--green);
-      animation: pulse-dot 2s infinite;
-    }
-    @keyframes pulse-dot {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.4; }
-    }
-    .time-display {
-      font-family: var(--font-mono);
-      font-size: 12px;
-      color: var(--text-2);
-    }
+        fieldset {
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 1.2rem;
+            margin-bottom: 1.2rem;
+            background: #fafbfc;
+        }
+        legend {
+            font-weight: 700;
+            color: var(--primary);
+            padding: 0 0.6rem;
+            font-size: 1rem;
+            background: white;
+            border-radius: 5px;
+        }
 
-    /* ===== MAIN CONTENT ===== */
-    .main { padding: 28px 32px 40px; max-width: 1400px; margin: 0 auto; width: 100%; }
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+            gap: 1rem;
+        }
+        .form-group { display: flex; flex-direction: column; gap: 0.3rem; }
+        .form-group label { font-weight: 600; font-size: 0.85rem; color: #555; }
+        .form-group input, .form-group select, .form-group textarea {
+            padding: 0.7rem 0.8rem;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-family: inherit;
+        }
+        .form-group textarea { resize: vertical; min-height: 50px; }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: var(--secondary);
+            box-shadow: 0 0 0 3px rgba(46,111,168,0.1);
+        }
 
-    /* ===== STATS ROW ===== */
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 14px;
-      margin-bottom: 24px;
-    }
-    .stat-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: var(--r-lg);
-      padding: 20px 22px;
-      position: relative;
-      overflow: hidden;
-      transition: border-color 0.2s;
-    }
-    .stat-card::before {
-      content: '';
-      position: absolute;
-      top: 0; left: 0; right: 0;
-      height: 2px;
-    }
-    .stat-card.green::before { background: linear-gradient(90deg, var(--green), transparent); }
-    .stat-card.red::before   { background: linear-gradient(90deg, var(--red), transparent); }
-    .stat-card.amber::before { background: linear-gradient(90deg, var(--amber), transparent); }
-    .stat-card.blue::before  { background: linear-gradient(90deg, var(--blue), transparent); }
-    .stat-card:hover { border-color: var(--border-bright); }
+        .btn {
+            padding: 0.7rem 1.4rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: #0d2137; transform: translateY(-2px); }
+        .btn-success { background: var(--success); color: white; }
+        .btn-success:hover { background: #219a52; transform: translateY(-2px); }
+        .btn-warning { background: var(--warning); color: white; }
+        .btn-danger { background: var(--danger); color: white; }
+        .btn-info { background: #17a2b8; color: white; }
+        .btn-sm { padding: 0.4rem 0.8rem; font-size: 0.8rem; }
+        .btn-xs { padding: 0.25rem 0.5rem; font-size: 0.7rem; }
 
-    .stat-label {
-      font-size: 11px;
-      font-weight: 500;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: var(--text-2);
-      margin-bottom: 10px;
-    }
-    .stat-value {
-      font-size: 36px;
-      font-weight: 800;
-      line-height: 1;
-      margin-bottom: 6px;
-    }
-    .stat-card.green .stat-value { color: var(--green); }
-    .stat-card.red   .stat-value { color: var(--red); }
-    .stat-card.amber .stat-value { color: var(--amber); }
-    .stat-card.blue  .stat-value { color: var(--blue); }
-    .stat-sub {
-      font-size: 12px;
-      color: var(--text-2);
-      font-family: var(--font-mono);
-    }
-    .stat-icon {
-      position: absolute;
-      right: 18px;
-      top: 18px;
-      opacity: 0.08;
-      font-size: 42px;
-    }
+        .table-container {
+            overflow-x: auto;
+            margin-top: 1rem;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        table { width: 100%; border-collapse: collapse; font-size: 0.83rem; min-width: 800px; }
+        th, td { padding: 0.55rem; text-align: left; border-bottom: 1px solid #e0e0e0; }
+        th { background: var(--primary); color: white; font-weight: 600; position: sticky; top: 0; z-index: 10; }
+        tr:hover { background: #f5f9ff; }
 
-    /* ===== CONTENT GRID ===== */
-    .content-grid {
-      display: grid;
-      grid-template-columns: 1fr 320px;
-      gap: 16px;
-      align-items: start;
-    }
+        .vencido { background: #ffe0e0 !important; color: #c0392b; font-weight: 700; }
+        .proximo-vencer { background: #fff9e0 !important; color: #d68910; font-weight: 600; }
+        .vigente { background: #e8f8e8 !important; }
+        .seleccionado-automatico { background: #e0f0ff !important; border-left: 3px solid #2e6fa8; }
 
-    /* ===== PANEL ===== */
-    .panel {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: var(--r-lg);
-      overflow: hidden;
-    }
-    .panel-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 16px 20px;
-      border-bottom: 1px solid var(--border);
-    }
-    .panel-title {
-      font-size: 13px;
-      font-weight: 700;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--text-0);
-    }
-    .panel-actions {
-      display: flex;
-      gap: 8px;
-    }
-    .btn-filter {
-      font-family: var(--font-mono);
-      font-size: 11px;
-      padding: 4px 10px;
-      border-radius: var(--r-sm);
-      border: 1px solid var(--border-bright);
-      background: transparent;
-      color: var(--text-1);
-      cursor: pointer;
-      transition: all 0.15s;
-    }
-    .btn-filter:hover { background: var(--bg-3); color: var(--text-0); }
-    .btn-filter.active {
-      background: var(--bg-3);
-      color: var(--text-0);
-      border-color: rgba(255,255,255,0.25);
-    }
-    .live-badge {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      font-family: var(--font-mono);
-      font-size: 11px;
-      color: var(--green);
-    }
-    .live-dot {
-      width: 6px; height: 6px;
-      border-radius: 50%;
-      background: var(--green);
-      animation: pulse-dot 1.5s infinite;
-    }
+        .badge {
+            display: inline-block;
+            padding: 0.2rem 0.5rem;
+            border-radius: 10px;
+            font-size: 0.7rem;
+            font-weight: 700;
+        }
+        .badge-danger { background: #e74c3c; color: white; }
+        .badge-warning { background: #f39c12; color: white; }
+        .badge-success { background: #27ae60; color: white; }
+        .badge-info { background: #17a2b8; color: white; }
 
-    /* ===== TABLE ===== */
-    .table-wrap { overflow-x: auto; }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 13px;
-    }
-    thead tr {
-      border-bottom: 1px solid var(--border);
-    }
-    th {
-      padding: 10px 16px;
-      text-align: left;
-      font-size: 10px;
-      font-weight: 500;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: var(--text-2);
-    }
-    td {
-      padding: 13px 16px;
-      border-bottom: 1px solid var(--border);
-      vertical-align: middle;
-    }
-    tbody tr:last-child td { border-bottom: none; }
-    tbody tr {
-      transition: background 0.12s;
-    }
-    tbody tr:hover { background: rgba(255,255,255,0.025); }
-    tbody tr.new-row {
-      animation: row-in 0.4s ease;
-    }
-    @keyframes row-in {
-      from { background: rgba(0,230,118,0.12); }
-      to   { background: transparent; }
-    }
+        .stock-info-card {
+            background: #f0f7ff;
+            border: 1px solid #cce5ff;
+            border-radius: 8px;
+            padding: 0.8rem;
+            margin: 0.5rem 0;
+            font-size: 0.85rem;
+        }
+        .stock-info-card strong { color: var(--primary); }
 
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      font-family: var(--font-mono);
-      font-size: 11px;
-      font-weight: 500;
-      padding: 3px 9px;
-      border-radius: 4px;
-    }
-    .badge.ok  { background: var(--green-bg); color: var(--green); border: 1px solid rgba(0,230,118,0.2); }
-    .badge.err { background: var(--red-bg);   color: var(--red);   border: 1px solid rgba(255,68,68,0.2); }
-    .badge-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+        .totals-box {
+            background: linear-gradient(135deg, #e8f0fe, #d4e6f1);
+            border-radius: 10px;
+            padding: 1.2rem;
+            margin-top: 1.2rem;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 1rem;
+            text-align: center;
+        }
+        .total-item {
+            background: white;
+            border-radius: 8px;
+            padding: 0.7rem;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        .total-item .label { font-size: 0.75rem; color: #777; font-weight: 600; }
+        .total-item .value { font-size: 1.2rem; font-weight: 700; color: var(--primary); }
 
-    .mono { font-family: var(--font-mono); font-size: 12px; color: var(--text-1); }
-    .name-cell { font-weight: 500; color: var(--text-0); }
-    .id-pill {
-      display: inline-block;
-      font-family: var(--font-mono);
-      font-size: 11px;
-      padding: 1px 7px;
-      border-radius: 4px;
-      background: var(--bg-3);
-      color: var(--text-1);
-      border: 1px solid var(--border-bright);
-    }
-    .conf-bar-wrap {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .conf-bar {
-      height: 4px;
-      border-radius: 2px;
-      flex: 1;
-      background: var(--bg-3);
-      max-width: 60px;
-    }
-    .conf-fill {
-      height: 100%;
-      border-radius: 2px;
-      background: var(--green);
-      transition: width 0.4s ease;
-    }
-    .conf-num { font-family: var(--font-mono); font-size: 11px; color: var(--text-1); min-width: 28px; }
+        .search-box {
+            display: flex;
+            gap: 0.6rem;
+            flex-wrap: wrap;
+            margin-bottom: 1rem;
+            align-items: flex-end;
+        }
+        .search-box input, .search-box select {
+            padding: 0.6rem;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+        }
+        .search-box input { flex: 1; min-width: 150px; }
 
-    /* ===== SIDEBAR ===== */
-    .sidebar-panel { display: flex; flex-direction: column; gap: 16px; }
+        .price-panel {
+            background: #fffef5;
+            border: 2px solid #f0e68c;
+            border-radius: var(--radius);
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
 
-    /* ===== MINI LOG ===== */
-    .log-list { padding: 0; }
-    .log-item {
-      display: flex;
-      flex-direction: column;
-      gap: 3px;
-      padding: 12px 18px;
-      border-bottom: 1px solid var(--border);
-      transition: background 0.12s;
-    }
-    .log-item:last-child { border-bottom: none; }
-    .log-item:hover { background: rgba(255,255,255,0.02); }
-    .log-item-top {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-    .log-name { font-size: 13px; font-weight: 500; color: var(--text-0); }
-    .log-time { font-family: var(--font-mono); font-size: 11px; color: var(--text-2); }
-    .log-sub  { font-family: var(--font-mono); font-size: 11px; color: var(--text-2); }
+        .editing-row { background: #fffde7 !important; }
+        .loading { text-align: center; padding: 2rem; color: #888; }
 
-    /* ===== DEVICE CARD ===== */
-    .device-card {
-      padding: 18px;
-    }
-    .device-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 9px 0;
-      border-bottom: 1px solid var(--border);
-      font-size: 13px;
-    }
-    .device-row:last-child { border-bottom: none; }
-    .device-key { color: var(--text-2); font-size: 12px; }
-    .device-val { font-family: var(--font-mono); font-size: 12px; color: var(--text-1); }
+        /* Categorías en stock */
+        .categoria-header {
+            background: #1a3c5e !important;
+            color: white !important;
+            font-size: 1rem;
+            font-weight: 700;
+            padding: 0.7rem !important;
+        }
+        .categoria-header td { background: #1a3c5e !important; color: white !important; }
 
-    /* ===== EMPTY / LOADER ===== */
-    .empty-state {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 50px 20px;
-      gap: 12px;
-      color: var(--text-2);
-    }
-    .spinner {
-      width: 28px; height: 28px;
-      border: 2px solid var(--bg-3);
-      border-top-color: var(--green);
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .empty-text { font-size: 13px; font-family: var(--font-mono); }
+        @media (max-width: 768px) {
+            .form-grid { grid-template-columns: 1fr 1fr; }
+            .tab-btn { font-size: 0.68rem; padding: 0.5rem 0.3rem; min-width: 60px; }
+            .totals-box { grid-template-columns: 1fr 1fr; }
+            th, td { padding: 0.4rem; font-size: 0.73rem; }
+        }
+        @media (max-width: 480px) {
+            .form-grid { grid-template-columns: 1fr; }
+            .header h1 { font-size: 1rem; }
+            .container { padding: 0.5rem; }
+            .tab-content { padding: 1rem 0.7rem; }
+        }
 
-    /* ===== FILTER ACTIVE ===== */
-    #filter-all.active, #filter-ok.active, #filter-err.active {
-      background: var(--bg-3);
-      color: var(--text-0);
-    }
+        /* Colores para lotes numerados */
+        .lote-1 { background: #FFE5E5 !important; border-left: 4px solid #FF6B6B; }
+        .lote-2 { background: #FFF4E5 !important; border-left: 4px solid #FFA94D; }
+        .lote-3 { background: #E5F5FF !important; border-left: 4px solid #4DBFFF; }
+        .lote-4 { background: #E5FFE5 !important; border-left: 4px solid #6BCB77; }
+        .lote-5 { background: #F5E5FF !important; border-left: 4px solid #A78BFA; }
+        .lote-6 { background: #FFE5F5 !important; border-left: 4px solid #FF6B9D; }
+        .lote-7 { background: #E5F9FF !important; border-left: 4px solid #00B8D4; }
+        .lote-8 { background: #FFFFE5 !important; border-left: 4px solid #FFEB3B; }
+        .lote-9 { background: #E5F5F5 !important; border-left: 4px solid #009688; }
+        .lote-10 { background: #F5F5E5 !important; border-left: 4px solid #8D6E63; }
+        .lote-0 { background: #E8E8E8 !important; border-left: 4px solid #666; }
 
-    /* ===== RESPONSIVE ===== */
-    @media (max-width: 1024px) {
-      .content-grid { grid-template-columns: 1fr; }
-      .stats-grid   { grid-template-columns: repeat(2, 1fr); }
-    }
-    @media (max-width: 600px) {
-      .topbar { padding: 0 16px; }
-      .main   { padding: 16px; }
-      .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
-      .stat-value { font-size: 28px; }
-      th, td { padding: 10px 10px; }
-    }
-  </style>
+        /* Payment Breakdown Styles */
+        .payment-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 0.8rem;
+            margin-top: 0.5rem;
+        }
+        .credit-section {
+            background: #fff9e6;
+            border: 1px solid #ffe082;
+            border-radius: 10px;
+            padding: 1rem;
+            margin-top: 1rem;
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+        .validation-bar {
+            height: 8px;
+            background: #eee;
+            border-radius: 4px;
+            margin-top: 1rem;
+            overflow: hidden;
+        }
+        .validation-progress {
+            height: 100%;
+            background: var(--success);
+            width: 0%;
+            transition: width 0.3s;
+        }
+        .diff-msg { font-size: 0.85rem; font-weight: 600; margin-top: 0.3rem; text-align: right; }
+        .rebaja-row { 
+            background: #f0f7ff; 
+            font-size: 0.8rem; 
+            border-left: 3px solid var(--secondary);
+            margin-top: 2px;
+        }
+        .rebaja-row td { padding: 4px !important; }
+        .btn-rebaja {
+            background: #e3f2fd;
+            color: #1976d2;
+            border: 1px solid #bbdefb;
+            padding: 2px 6px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.7rem;
+            margin-top: 4px;
+        }
+        .btn-rebaja:hover { background: #bbdefb; }
+    </style>
 </head>
 <body>
-<div class="shell">
 
-  <!-- ===== TOPBAR ===== -->
-  <header class="topbar">
-    <div class="topbar-left">
-      <div class="logo-mark">
-        <svg viewBox="0 0 24 24" fill="none" stroke="#080b0f" stroke-width="2.5" stroke-linecap="round">
-          <path d="M12 2C9.5 2 7.5 4 7.5 6.5c0 1.5.7 2.8 1.8 3.7L8 22h8l-1.3-11.8C15.8 9.3 16.5 8 16.5 6.5 16.5 4 14.5 2 12 2z"/>
-          <circle cx="12" cy="6.5" r="1.5"/>
-        </svg>
-      </div>
-      <span class="logo-text">XAVI<span>BIO</span></span>
-      <span class="topbar-badge">v2.1</span>
-    </div>
-    <div class="topbar-right">
-      <div class="conn-indicator">
-        <div class="conn-dot" id="conn-dot"></div>
-        <span id="conn-text">Conectando...</span>
-      </div>
-      <div class="time-display" id="clock">--:--:--</div>
-    </div>
-  </header>
-
-  <!-- ===== MAIN ===== -->
-  <main class="main">
-
-    <!-- Stats -->
-    <div class="stats-grid">
-      <div class="stat-card green">
-        <div class="stat-label">Accesos permitidos</div>
-        <div class="stat-value" id="stat-ok">—</div>
-        <div class="stat-sub" id="stat-ok-pct">— % del total</div>
-        <div class="stat-icon">✓</div>
-      </div>
-      <div class="stat-card red">
-        <div class="stat-label">Accesos denegados</div>
-        <div class="stat-value" id="stat-err">—</div>
-        <div class="stat-sub" id="stat-err-pct">— % del total</div>
-        <div class="stat-icon">✕</div>
-      </div>
-      <div class="stat-card amber">
-        <div class="stat-label">Total de eventos</div>
-        <div class="stat-value" id="stat-total">—</div>
-        <div class="stat-sub" id="stat-last">Último: —</div>
-        <div class="stat-icon">#</div>
-      </div>
-      <div class="stat-card blue">
-        <div class="stat-label">Confianza promedio</div>
-        <div class="stat-value" id="stat-conf">—</div>
-        <div class="stat-sub">puntos del sensor</div>
-        <div class="stat-icon">~</div>
-      </div>
+    <!-- LOGIN -->
+    <div id="loginScreen" class="login-container">
+        <div class="logo">🥤</div>
+        <h2>Yanet Mendocina</h2>
+        <p style="color:#777;margin-bottom:1rem;">Sistema de Distribución v3.0</p>
+        <input type="email" id="loginEmail" placeholder="Correo electrónico" value="yanet@mendocina.bo">
+        <input type="password" id="loginPassword" placeholder="Contraseña">
+        <button class="btn-login" onclick="login()">🔐 Ingresar al Sistema</button>
+        <p id="loginError" class="login-error"></p>
     </div>
 
-    <!-- Content grid -->
-    <div class="content-grid">
-
-      <!-- Main table panel -->
-      <div class="panel">
-        <div class="panel-header">
-          <span class="panel-title">Registro de accesos</span>
-          <div style="display:flex;align-items:center;gap:12px;">
-            <div class="live-badge">
-              <div class="live-dot"></div>
-              TIEMPO REAL
-            </div>
-            <div class="panel-actions">
-              <button class="btn-filter active" id="filter-all" onclick="setFilter('all')">Todos</button>
-              <button class="btn-filter" id="filter-ok"  onclick="setFilter('ok')">Permitidos</button>
-              <button class="btn-filter" id="filter-err" onclick="setFilter('err')">Denegados</button>
-            </div>
-          </div>
-        </div>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Estado</th>
-                <th>ID</th>
-                <th>Nombre</th>
-                <th>CI</th>
-                <th>Fecha y hora</th>
-                <th>Confianza</th>
-                <th>Dispositivo</th>
-              </tr>
-            </thead>
-            <tbody id="log-tbody">
-              <tr>
-                <td colspan="7">
-                  <div class="empty-state">
-                    <div class="spinner"></div>
-                    <span class="empty-text">Conectando a Firebase...</span>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- Sidebar -->
-      <div class="sidebar-panel">
-
-        <!-- Últimos accesos rápidos -->
-        <div class="panel">
-          <div class="panel-header">
-            <span class="panel-title">Últimos eventos</span>
-          </div>
-          <div class="log-list" id="log-mini"></div>
+    <!-- SISTEMA PRINCIPAL -->
+    <div id="appScreen" style="display:none;">
+        <div class="header">
+            <h1>🥤 Yanet Mendocina - Control de Distribución v3.0</h1>
+            <div class="user-info" id="userDisplay"></div>
+            <button class="btn-logout" onclick="logout()">🚪 Cerrar Sesión</button>
         </div>
 
-        <!-- Info del dispositivo -->
-        <div class="panel">
-          <div class="panel-header">
-            <span class="panel-title">Dispositivo</span>
-          </div>
-          <div class="device-card">
-            <div class="device-row">
-              <span class="device-key">ID</span>
-              <span class="device-val" id="dev-id">—</span>
+        <div class="container">
+            <div class="tabs">
+                <button class="tab-btn active" onclick="switchTab('ingreso')">📥 Ingreso</button>
+                <button class="tab-btn" onclick="switchTab('stock')">📦 Stock</button>
+                <button class="tab-btn" onclick="switchTab('precios')">💰 Precios</button>
+                <button class="tab-btn" onclick="switchTab('salida')">🚚 Salida</button>
+                <button class="tab-btn" onclick="switchTab('rendicion')">🔄 Rendición</button>
+                <button class="tab-btn" onclick="switchTab('deudores')">👥 Deudores</button>
+                <button class="tab-btn" onclick="switchTab('historial')">📋 Historial</button>
             </div>
-            <div class="device-row">
-              <span class="device-key">IP</span>
-              <span class="device-val" id="dev-ip">—</span>
+
+            <!-- ==================== PANEL INGRESO - LOTES DE CAMIÓN ==================== -->
+            <div id="panelIngreso" class="tab-content active">
+                <div class="section-title">📥 Registro de Lote de Camión</div>
+
+                <fieldset>
+                    <legend>🚛 Datos del Camión</legend>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Placa del Camión</label>
+                            <input type="text" id="lotePlaca" placeholder="Ej: ABC-1234">
+                        </div>
+                        <div class="form-group">
+                            <label>Ref. Envío/Factura</label>
+                            <input type="text" id="loteRefEnvio" placeholder="Ej: FAC-2026-001">
+                        </div>
+                        <div class="form-group">
+                            <label>Fecha de Llegada</label>
+                            <input type="date" id="loteFechaLlegada" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Hora de Llegada</label>
+                            <input type="time" id="loteHoraLlegada">
+                        </div>
+                        <div class="form-group" style="grid-column: 1 / -1;">
+                            <label>Observaciones</label>
+                            <textarea id="loteObservaciones" placeholder="Notas sobre el lote..." rows="2"></textarea>
+                        </div>
+                    </div>
+                </fieldset>
+
+                <fieldset>
+                    <legend>💰 Productos en CRÉDITO</legend>
+                    <button class="btn btn-sm btn-info" onclick="abrirFormProductoCredito()" style="margin-bottom:1rem;">➕ Agregar Producto</button>
+                    <div class="table-container">
+                        <table id="tablaCredito">
+                            <thead>
+                                <tr><th>Producto</th><th>Presentación</th><th>Sabor</th><th>Vencimiento</th><th>Paquetes</th><th>Precio/Paq</th><th>Subtotal</th><th>Acción</th></tr>
+                            </thead>
+                            <tbody id="tbodyCreditoItems"></tbody>
+                        </table>
+                    </div>
+                    <div class="totals-box" style="margin-top:1rem;">
+                        <div class="total-item">
+                            <span class="label">Total Paquetes</span>
+                            <span class="value" id="totalPaqCredito">0</span>
+                        </div>
+                        <div class="total-item">
+                            <span class="label">Total Costo (Bs)</span>
+                            <span class="value" id="totalCostoCredito">0.00</span>
+                        </div>
+                    </div>
+                </fieldset>
+
+                <fieldset>
+                    <legend>🎁 Productos en BONIFICACIÓN</legend>
+                    <button class="btn btn-sm btn-info" onclick="abrirFormProductoBonificacion()" style="margin-bottom:1rem;">➕ Agregar Producto</button>
+                    <div class="table-container">
+                        <table id="tablaBonificacion">
+                            <thead>
+                                <tr><th>Producto</th><th>Presentación</th><th>Sabor</th><th>Vencimiento</th><th>Paquetes</th><th>Acción</th></tr>
+                            </thead>
+                            <tbody id="tbodyBonificacionItems"></tbody>
+                        </table>
+                    </div>
+                    <div class="totals-box" style="margin-top:1rem;">
+                        <div class="total-item">
+                            <span class="label">Total Paquetes</span>
+                            <span class="value" id="totalPaqBonificacion">0</span>
+                        </div>
+                    </div>
+                </fieldset>
+
+                <div style="display:flex;gap:1rem;margin-top:1.5rem;">
+                    <button class="btn btn-success" onclick="registrarLote()">✅ Confirmar Lote</button>
+                    <button class="btn btn-warning" onclick="limpiarFormLote()">🔄 Limpiar</button>
+                </div>
+                <p id="loteMsg" style="margin-top:0.8rem;font-weight:600;"></p>
             </div>
-            <div class="device-row">
-              <span class="device-key">Último ping</span>
-              <span class="device-val" id="dev-ping">—</span>
+
+            <!-- MODAL PARA AGREGAR PRODUCTO AL LOTE -->
+            <div id="modalAgregarProductoLote" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:2000;justify-content:center;align-items:center;overflow-y:auto;">
+                <div style="background:white;border-radius:12px;padding:2rem;max-width:600px;width:90%;margin:2rem auto;">
+                    <h3 id="modalProductoTitulo" style="color:var(--primary);margin-bottom:1rem;"></h3>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Categoría</label>
+                            <select id="modProdCategoria" onchange="modActualizarProductos()">
+                                <option value="">Seleccionar...</option>
+                                <option value="sodas">🥤 Sodas Mendocina</option>
+                                <option value="cervezas_lata">🍺 Cervezas en Lata</option>
+                                <option value="cervezas_botella">🍾 Cervezas en Botella</option>
+                                <option value="energizantes">⚡ Energizantes/Maltas</option>
+                                <option value="agua">💧 Agua</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Producto</label>
+                            <select id="modProdProducto" onchange="modActualizarPresentaciones()">
+                                <option value="">Seleccionar...</option>
+                            </select>
+                        </div>
+                        <div class="form-group" id="modSaborContainer" style="display:none;">
+                            <label>Sabor</label>
+                            <select id="modProdSabor">
+                                <option value="">Seleccionar...</option>
+                                <option value="Naranja">🍊 Naranja</option><option value="Cola">🥤 Cola</option>
+                                <option value="Frutilla">🍓 Frutilla</option><option value="Pomelo">🍊 Pomelo</option>
+                                <option value="Guaraná">🌿 Guaraná</option><option value="Limón">🍋 Limón</option>
+                                <option value="Uva">🍇 Uva</option><option value="Piña">🍍 Piña</option>
+                                <option value="Papaya">🍈 Papaya</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Presentación</label>
+                            <select id="modProdPresentacion">
+                                <option value="">Seleccionar...</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Vencimiento</label>
+                            <input type="date" id="modProdVencimiento" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Paquetes</label>
+                            <input type="number" id="modProdPaquetes" min="1" value="1">
+                        </div>
+                        <div class="form-group">
+                            <label>Uni. por Paquete</label>
+                            <input type="number" id="modProdUniPaq" min="1" value="6">
+                        </div>
+                        <div class="form-group" id="modCostoContainer">
+                            <label>Precio de Costo (Bs/Paq)</label>
+                            <input type="number" id="modProdPrecioCosto" min="0" step="0.01" value="0">
+                        </div>
+                        <div class="form-group">
+                            <label>Paq. Dañados</label>
+                            <input type="number" id="modProdDanados" min="0" value="0">
+                        </div>
+                        <div class="form-group">
+                            <label>Uni. Dañadas (sueltas)</label>
+                            <input type="number" id="modProdUniDanadas" min="0" value="0">
+                        </div>
+                    </div>
+                    <div style="display:flex;gap:1rem;justify-content:flex-end;margin-top:1rem;">
+                        <button class="btn btn-sm btn-danger" onclick="cerrarModalProductoLote()">Cancelar</button>
+                        <button class="btn btn-sm btn-primary" id="btnAgregarProductoLote">➕ Agregar</button>
+                    </div>
+                </div>
             </div>
-            <div class="device-row">
-              <span class="device-key">Base de datos</span>
-              <span class="device-val" style="color:var(--green)">Firebase RT</span>
+
+            <!-- ==================== PANEL STOCK (ORDENADO POR VENCIMIENTO Y CATEGORÍA) ==================== -->
+            <div id="panelStock" class="tab-content">
+                <div class="section-title">📦 Inventario - Ordenado por Vencimiento</div>
+                <div class="search-box">
+                    <input type="text" id="stockSearch" placeholder="🔍 Buscar..." oninput="cargarStock()">
+                    <select id="stockFilterVencimiento" onchange="cargarStock()">
+                        <option value="todos">Todos estados</option>
+                        <option value="vencido">🔴 Vencidos</option>
+                        <option value="proximo">🟡 Próximos (30 días)</option>
+                        <option value="vigente">🟢 Vigentes</option>
+                    </select>
+                    <select id="stockFilterCategoria" onchange="cargarStock()">
+                        <option value="todos">Todas categorías</option>
+                        <option value="sodas">🥤 Sodas Mendocina</option>
+                        <option value="cervezas">🍺 Todas Cervezas</option>
+                        <option value="cervezas_lata">🍺 Cervezas Lata</option>
+                        <option value="cervezas_botella">🍾 Cervezas Botella</option>
+                        <option value="energizantes">⚡ Energizantes/Maltas</option>
+                        <option value="agua">💧 Agua</option>
+                    </select>
+                    <button class="btn btn-sm btn-success" onclick="descargarReporteExcel()">📥 Descargar Excel</button>
+                </div>
+
+                <div class="financial-summary" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:1rem; margin-bottom:1.5rem;">
+                    <div class="card" style="background:var(--primary); color:white; padding:1rem; border-radius:12px;">
+                        <h4 style="margin:0; font-size:0.9rem; opacity:0.9;">📉 Costo Total Comercial (Crédito)</h4>
+                        <div style="font-size:1.5rem; font-weight:700; margin-top:0.5rem;" id="totalCostoComercial">0.00 Bs</div>
+                    </div>
+                    <div class="card" style="background:var(--success); color:white; padding:1rem; border-radius:12px;">
+                        <h4 style="margin:0; font-size:0.9rem; opacity:0.9;">🎁 Beneficio Potencial (Bonos)</h4>
+                        <div style="font-size:1.5rem; font-weight:700; margin-top:0.5rem;" id="totalBeneficioBonos">0.00 Bs</div>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <h3>🚛 Productos en CRÉDITO (Stock Comercial)</h3>
+                    <table id="stockTable">
+                        <thead>
+                            <tr>
+                                <th>Lote</th>
+                                <th>Vencimiento</th>
+                                <th>Producto</th>
+                                <th>Sabor</th>
+                                <th>Presentación</th>
+                                <th>Paquetes</th>
+                                <th>Unidades</th>
+                                <th>Dañados (Paq/Uni)</th>
+                                <th>Costo (Bs)</th>
+                                <th>Total Costo</th>
+                                <th>Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="stockTableBody"></tbody>
+                    </table>
+                </div>
+
+                <div class="table-container" style="margin-top:2rem;">
+                    <h3>🎁 Mis BONIFICACIONES</h3>
+                    <table id="stockBonifTable">
+                        <thead>
+                            <tr>
+                                <th>Lote</th>
+                                <th>Vencimiento</th>
+                                <th>Producto</th>
+                                <th>Sabor</th>
+                                <th>Presentación</th>
+                                <th>Paquetes</th>
+                                <th>Unidades</th>
+                                <th>Dañados (Uni)</th>
+                                <th>Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="stockBonifTableBody"></tbody>
+                    </table>
+                </div>
             </div>
-          </div>
+
+            <!-- ==================== PANEL DE PRECIOS ==================== -->
+            <div id="panelPrecios" class="tab-content">
+                <div class="section-title">💰 Configuración de Precios Generales</div>
+                <div class="price-panel">
+                    <h3>📌 Precios por Producto/Presentación</h3>
+                    <p style="font-size:0.85rem;color:#888;">Configure el precio por paquete. Se usará automáticamente en salidas.</p>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr><th>Categoría</th><th>Producto</th><th>Presentación</th><th>Precio/Paq (Bs)</th><th>Acción</th></tr>
+                        </thead>
+                        <tbody id="preciosTableBody">
+                            <tr><td colspan="5" class="loading">Cargando precios...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <p id="preciosMsg" style="margin-top:0.8rem;font-weight:600;"></p>
+            </div>
+
+            <!-- ==================== PANEL SALIDA (CON AUTO-SELECCIÓN POR VENCIMIENTO) ==================== -->
+            <div id="panelSalida" class="tab-content">
+                <div class="section-title">🚚 Registro de Salida de Camión</div>
+                
+                <fieldset>
+                    <legend>👤 Datos del Chofer</legend>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Nombre del Chofer</label>
+                            <input type="text" id="salidaChofer" placeholder="Nombre completo">
+                        </div>
+                        <div class="form-group">
+                            <label>Destino</label>
+                            <input type="text" id="salidaDestino" placeholder="Ciudad o zona">
+                        </div>
+                        <div class="form-group">
+                            <label>Observaciones del Camión</label>
+                            <textarea id="salidaObservacion" placeholder="Cualquier observación relevante..." rows="2"></textarea>
+                        </div>
+                    </div>
+                </fieldset>
+
+                <fieldset>
+                    <legend>📦 Seleccionar y Agregar Productos</legend>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Categoría</label>
+                            <select id="salCategoria" onchange="actualizarProductosSalida()">
+                                <option value="">Seleccionar...</option>
+                                <option value="sodas">🥤 Sodas Mendocina</option>
+                                <option value="cervezas_lata">🍺 Cervezas Lata</option>
+                                <option value="cervezas_botella">🍾 Cervezas Botella</option>
+                                <option value="energizantes">⚡ Energizantes/Maltas</option>
+                                <option value="agua">💧 Agua</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Producto</label>
+                            <select id="salProducto" onchange="actualizarPresentacionesSalida()">
+                                <option value="">Seleccionar categoría</option>
+                            </select>
+                        </div>
+                        <div class="form-group" id="saborContainerSal" style="display:none;">
+                            <label>Sabor</label>
+                            <select id="salSabor">
+                                <option value="">Seleccionar sabor...</option>
+                                <option value="Naranja">🍊 Naranja</option><option value="Cola">🥤 Cola</option>
+                                <option value="Frutilla">🍓 Frutilla</option><option value="Pomelo">🍊 Pomelo</option>
+                                <option value="Guaraná">🌿 Guaraná</option><option value="Limón">🍋 Limón</option>
+                                <option value="Uva">🍇 Uva</option><option value="Piña">🍍 Piña</option>
+                                <option value="Papaya">🍈 Papaya</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Presentación</label>
+                            <select id="salPresentacion" onchange="mostrarStockDisponible()">
+                                <option value="">Seleccionar...</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Paquetes a Cargar</label>
+                            <input type="number" id="salCantidad" min="1" value="1">
+                        </div>
+                    </div>
+                    
+                    <div id="stockDisponibleInfo" style="display:none; margin-top:1rem;">
+                        <div class="stock-info-card">
+                            <strong>📊 Stock Disponible (ordenado por vencimiento):</strong>
+                            <div id="stockDisponibleDetalle"></div>
+                        </div>
+                    </div>
+
+                    <button class="btn btn-sm btn-info" onclick="agregarProductoSalida()" style="margin-top:0.8rem;">➕ Agregar al Camión</button>
+                    <small style="color:#888;margin-left:1rem;">⚠️ Se auto-seleccionan los lotes más próximos a vencer</small>
+                </fieldset>
+
+                <fieldset>
+                    <legend>📋 Productos en el Camión</legend>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr><th>Producto</th><th>Sabor</th><th>Presentación</th><th>Paquetes</th><th>Precio/Paq</th><th>Subtotal</th><th>Vencimiento</th><th>Acción</th></tr>
+                            </thead>
+                            <tbody id="salidaTableBody">
+                                <tr><td colspan="8" style="text-align:center;color:#999;">No hay productos</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </fieldset>
+
+                <div class="totals-box">
+                    <div class="total-item"><span class="label">Total Paquetes</span><span class="value" id="salidaTotalPaquetes">0</span></div>
+                    <div class="total-item"><span class="label">Total Bs</span><span class="value" id="salidaTotalBs">0.00</span></div>
+                </div>
+                <button class="btn btn-success" onclick="registrarSalida()">🚛 Registrar Salida</button>
+                <p id="salidaMsg" style="margin-top:0.8rem;font-weight:600;"></p>
+            </div>
+
+            <!-- ==================== PANEL RENDICIÓN ==================== -->
+            <div id="panelRendicion" class="tab-content">
+                <div class="section-title">🔄 Rendición y Retorno de Camión</div>
+                <div class="search-box">
+                    <select id="rendicionSalidaId" onchange="cargarDatosRendicion()" style="flex:1;">
+                        <option value="">Seleccionar salida pendiente...</option>
+                    </select>
+                    <button class="btn btn-sm btn-warning" onclick="cargarSalidasPendientes()">🔄 Actualizar</button>
+                </div>
+                <div id="rendicionDetalle"></div>
+                <p id="rendicionMsg" style="margin-top:0.8rem;font-weight:600;"></p>
+            </div>
+
+            <!-- ==================== PANEL DEUDORES ==================== -->
+            <div id="panelDeudores" class="tab-content">
+                <div class="section-title">👥 Control de Deudores (Ventas al Crédito)</div>
+                <div class="search-box">
+                    <input type="text" id="deudoresSearch" placeholder="🔍 Buscar cliente o nota..." oninput="cargarDeudores()">
+                    <button class="btn btn-sm btn-warning" onclick="cargarDeudores()">🔄 Actualizar</button>
+                    <button class="btn btn-sm btn-success" onclick="descargarReporteDeudores()">📥 Descargar Excel Deudores</button>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Cliente</th>
+                                <th>Contacto</th>
+                                <th>Nota/Recibo</th>
+                                <th>Monto (Bs)</th>
+                                <th>Compromiso</th>
+                                <th>Estado</th>
+                                <th>Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="deudoresTableBody">
+                            <tr><td colspan="8" class="loading">Cargando deudores...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- ==================== PANEL HISTORIAL ==================== -->
+            <div id="panelHistorial" class="tab-content">
+                <div class="section-title">📋 Historial de Movimientos</div>
+                <div class="search-box">
+                    <input type="text" id="histSearch" placeholder="🔍 Buscar..." oninput="cargarHistorial()">
+                    <input type="date" id="histFechaDesde" onchange="cargarHistorial()" title="Desde">
+                    <input type="date" id="histFechaHasta" onchange="cargarHistorial()" title="Hasta">
+                    <select id="histTipo" onchange="cargarHistorial()">
+                        <option value="todos">Todos</option>
+                        <option value="ingreso">Ingresos</option>
+                        <option value="salida">Salidas</option>
+                        <option value="rendicion">Rendiciones</option>
+                    </select>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead><tr><th>Fecha/Hora</th><th>Tipo</th><th>Detalle</th><th>Monto (Bs)</th></tr></thead>
+                        <tbody id="historialTableBody">
+                            <tr><td colspan="4" class="loading">Cargando...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
 
-      </div>
+        <!-- MODAL PARA EDITAR INGRESO -->
+        <div id="modalEditarIngreso" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:2000;justify-content:center;align-items:center;">
+            <div style="background:white;border-radius:12px;padding:2rem;max-width:600px;width:90%;max-height:80vh;overflow-y:auto;">
+                <h3 style="color:var(--primary);margin-bottom:1rem;">✏️ Editar Ingreso</h3>
+                <div id="modalEditarContenido"></div>
+                <div style="display:flex;gap:1rem;justify-content:flex-end;margin-top:1rem;">
+                    <button class="btn btn-sm btn-danger" onclick="document.getElementById('modalEditarIngreso').style.display='none'">Cancelar</button>
+                    <button class="btn btn-sm btn-primary" id="btnGuardarEdicion">💾 Guardar Cambios</button>
+                </div>
+            </div>
+        </div>
     </div>
-  </main>
-</div>
 
-<!-- ===== SCRIPTS ===== -->
-<script>
-  // ================================================
-  //  CONFIGURACIÓN FIREBASE
-  //  Solo cambia estos valores si tu proyecto cambia
-  // ================================================
-  const firebaseConfig = {
-    apiKey:            "AIzaSyDPwk9l2PxAdQJXWQMHSewVIBs2R2eACN4",
-    authDomain:        "xavi-biometrico.firebaseapp.com",
-    projectId:         "xavi-biometrico",
-    storageBucket:     "xavi-biometrico.firebasestorage.app",
-    messagingSenderId: "545216091867",
-    appId:             "1:545216091867:web:864f18b6d5b892f31c5efe",
-    databaseURL:       "https://xavi-biometrico-default-rtdb.firebaseio.com"
-  };
+    <script>
+        // ==================== CONFIGURACIÓN FIREBASE ====================
+        const firebaseConfig = {
+            apiKey: "AIzaSyBsi1frR41LGu28hvFk9nKFAojVk2vbkgs",
+            authDomain: "yanet-mendocina.firebaseapp.com",
+            projectId: "yanet-mendocina",
+            storageBucket: "yanet-mendocina.firebasestorage.app",
+            messagingSenderId: "720893524811",
+            appId: "1:720893524811:web:a6aef95618bae6760986ce"
+        };
 
-  // ================================================
-  //  ESTADO GLOBAL
-  // ================================================
-  let allRecords = [];   // todos los registros de Firebase
-  let activeFilter = 'all';
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
 
-  // ================================================
-  //  RELOJ
-  // ================================================
-  function updateClock() {
-    const now = new Date();
-    document.getElementById('clock').textContent =
-      now.toLocaleTimeString('es-BO', { hour12: false });
-  }
-  setInterval(updateClock, 1000);
-  updateClock();
+        function logDebug(msg) { console.log('🔍', new Date().toLocaleTimeString(), msg); }
 
-  // ================================================
-  //  FORMATEO DE FECHA
-  // ================================================
-  function fmtDate(rec) {
-    if (rec.timestamp_local && rec.timestamp_local !== 'SinHora') return rec.timestamp_local;
-    if (rec.timestamp_unix && rec.timestamp_unix > 0) {
-      const d = new Date(rec.timestamp_unix * 1000);
-      return d.toLocaleString('es-BO', { day:'2-digit', month:'2-digit', year:'numeric',
-        hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false });
-    }
-    if (rec.timestamp_iso) return rec.timestamp_iso.replace('T', ' ');
-    return '—';
-  }
+        // ==================== COLORES PARA LOTES ====================
+        const coloresLotes = [
+            '#FF6B6B', '#FFA94D', '#4DBFFF', '#6BCB77', '#A78BFA',
+            '#FF6B9D', '#00B8D4', '#FFEB3B', '#009688', '#8D6E63'
+        ];
 
-  function fmtTimeShort(rec) {
-    if (rec.timestamp_local && rec.timestamp_local !== 'SinHora') {
-      return rec.timestamp_local.split(' ')[1] || rec.timestamp_local;
-    }
-    if (rec.timestamp_unix && rec.timestamp_unix > 0) {
-      const d = new Date(rec.timestamp_unix * 1000);
-      return d.toLocaleTimeString('es-BO', { hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false });
-    }
-    return '—';
-  }
+        function obtenerColorLote(numeroLote) {
+            if (!numeroLote || numeroLote <= 0) return '#E8E8E8';
+            return coloresLotes[(numeroLote - 1) % coloresLotes.length];
+        }
 
-  // ================================================
-  //  RENDERIZAR TABLA PRINCIPAL
-  // ================================================
-  function renderTable(records, isNew = false) {
-    const tbody = document.getElementById('log-tbody');
+        function obtenerClaseLote(numeroLote) {
+            if (!numeroLote || numeroLote <= 0) return 'lote-0';
+            return `lote-${((numeroLote - 1) % 10) + 1}`;
+        }
 
-    if (records.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="7">
-        <div class="empty-state">
-          <span class="empty-text">Sin registros aún. Espera el primer acceso del ESP32.</span>
-        </div></td></tr>`;
-      return;
-    }
+        // ==================== CATÁLOGO ====================
+        const catalogoCompleto = {
+            sodas: {
+                categoria: "Sodas Mendocina", catGrupo: "sodas",
+                producto: "Mendocina",
+                sabores: ["Naranja","Cola","Frutilla","Pomelo","Guaraná","Limón","Uva","Piña","Papaya"],
+                presentaciones: ["3 Litros","2 Litros","1 Litro","330 ml"]
+            },
+            cervezas_lata: {
+                categoria: "Cervezas en Lata", catGrupo: "cervezas",
+                productos: [
+                    {nombre:"Sniders",presentaciones:["473 ml"]},
+                    {nombre:"Capital",presentaciones:["350 ml","473 ml"]},
+                    {nombre:"Amster",presentaciones:["269 ml","473 ml"]}
+                ]
+            },
+            cervezas_botella: {
+                categoria: "Cervezas en Botella", catGrupo: "cervezas",
+                productos: [
+                    {nombre:"Amster",presentaciones:["620 ml"]},
+                    {nombre:"Real",presentaciones:["620 ml"]},
+                    {nombre:"Heineken",presentaciones:["220 ml"]}
+                ]
+            },
+            energizantes: {
+                categoria: "Energizantes y Maltas", catGrupo: "energizantes",
+                productos: [
+                    {nombre:"Malta",presentaciones:["Lata 350 ml"]},
+                    {nombre:"Bolt",presentaciones:["Lata 473 ml","Lata 275 ml","Botella 330 ml"]}
+                ]
+            },
+            agua: {
+                categoria: "Agua", catGrupo: "agua",
+                producto: "Agua",
+                presentaciones: ["3 Litros","2 Litros","1 Litro","620 ml"]
+            }
+        };
 
-    // Ordenar por timestamp descendente
-    const sorted = [...records].sort((a, b) => (b.timestamp_unix || 0) - (a.timestamp_unix || 0));
+        let productosEnSalida = [];
 
-    tbody.innerHTML = sorted.map((rec, idx) => {
-      const ok      = rec.permitido === true || rec.estado === 'PERMITIDO';
-      const nombre  = (rec.nombre  && rec.nombre  !== '---') ? rec.nombre  : '—';
-      const ci      = (rec.ci      && rec.ci      !== '---') ? rec.ci      : '—';
-      const conf    = rec.confianza || 0;
-      const confPct = Math.min(100, conf);
-      const dev     = rec.dispositivo || '—';
-      const uid     = rec.usuario_id !== undefined ? rec.usuario_id : '—';
-      const newCls  = (isNew && idx === 0) ? 'new-row' : '';
+        // ==================== AUTENTICACIÓN ====================
+        function login() {
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            const errorEl = document.getElementById('loginError');
+            if(!email||!password){errorEl.textContent='⚠️ Complete todos los campos';errorEl.style.display='block';return;}
+            errorEl.style.display='none';
+            auth.signInWithEmailAndPassword(email,password)
+                .then(u=>{
+                    document.getElementById('loginScreen').style.display='none';
+                    document.getElementById('appScreen').style.display='block';
+                    document.getElementById('userDisplay').textContent='👤 '+u.user.email;
+                    inicializarApp();
+                })
+                .catch(e=>{errorEl.textContent='❌ '+e.message;errorEl.style.display='block';});
+        }
+        function logout(){auth.signOut().then(()=>{document.getElementById('appScreen').style.display='none';document.getElementById('loginScreen').style.display='block';document.getElementById('loginPassword').value='';});}
+        auth.onAuthStateChanged(u=>{
+            if(u){document.getElementById('loginScreen').style.display='none';document.getElementById('appScreen').style.display='block';document.getElementById('userDisplay').textContent='👤 '+u.email;inicializarApp();}
+            else{document.getElementById('appScreen').style.display='none';document.getElementById('loginScreen').style.display='block';}
+        });
 
-      return `<tr class="${newCls}">
-        <td><span class="badge ${ok ? 'ok' : 'err'}">
-          <span class="badge-dot"></span>${ok ? 'PERMITIDO' : 'DENEGADO'}
-        </span></td>
-        <td><span class="id-pill">#${uid}</span></td>
-        <td class="name-cell">${nombre}</td>
-        <td class="mono">${ci}</td>
-        <td class="mono">${fmtDate(rec)}</td>
-        <td>
-          <div class="conf-bar-wrap">
-            <div class="conf-bar"><div class="conf-fill" style="width:${confPct}%;${ok?'':'background:var(--red);'}"></div></div>
-            <span class="conf-num">${conf}</span>
-          </div>
-        </td>
-        <td class="mono">${dev}</td>
-      </tr>`;
-    }).join('');
-  }
+        // ==================== NAVEGACIÓN ====================
+        function switchTab(tabName){
+            document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(p=>p.classList.remove('active'));
+            const map={ingreso:0,stock:1,precios:2,salida:3,rendicion:4,deudores:5,historial:6};
+            document.querySelectorAll('.tab-btn')[map[tabName]].classList.add('active');
+            document.getElementById('panel'+tabName.charAt(0).toUpperCase()+tabName.slice(1)).classList.add('active');
+            if(tabName==='stock')cargarStock();
+            if(tabName==='precios')cargarPrecios();
+            if(tabName==='rendicion')cargarSalidasPendientes();
+            if(tabName==='deudores')cargarDeudores();
+            if(tabName==='historial')cargarHistorial();
+        }
+        function inicializarApp(){cargarStock();cargarSalidasPendientes();cargarDeudores();}
 
-  // ================================================
-  //  RENDERIZAR MINI LOG (SIDEBAR)
-  // ================================================
-  function renderMini(records) {
-    const el = document.getElementById('log-mini');
-    const sorted = [...records].sort((a, b) => (b.timestamp_unix || 0) - (a.timestamp_unix || 0));
-    const recent = sorted.slice(0, 6);
+        // ==================== FUNCIONES CATÁLOGO ====================
+        function actualizarProductosIngreso(){
+            const cat=document.getElementById('ingCategoria').value;
+            const ps=document.getElementById('ingProducto');
+            const prs=document.getElementById('ingPresentacion');
+            const sc=document.getElementById('saborContainerIng');
+            ps.innerHTML='<option value="">Seleccionar...</option>';
+            prs.innerHTML='<option value="">Seleccionar presentación...</option>';
+            sc.style.display='none';
+            if(!cat)return;
+            const c=catalogoCompleto[cat];
+            if(cat==='sodas'){sc.style.display='flex';ps.innerHTML='<option value="Mendocina">Mendocina</option>';ps.value='Mendocina';c.presentaciones.forEach(p=>prs.innerHTML+=`<option value="${p}">${p}</option>`);}
+            else if(cat==='agua'){ps.innerHTML='<option value="Agua">Agua</option>';ps.value='Agua';c.presentaciones.forEach(p=>prs.innerHTML+=`<option value="${p}">${p}</option>`);}
+            else if(c.productos){c.productos.forEach(p=>ps.innerHTML+=`<option value="${p.nombre}">${p.nombre}</option>`);ps.onchange=function(){actPresPorProd(cat,this.value,prs);};}
+        }
+        function actPresPorProd(cat,prod,prs){
+            prs.innerHTML='<option value="">Seleccionar...</option>';
+            if(!prod||!cat)return;
+            const c=catalogoCompleto[cat];
+            if(c.productos){const p=c.productos.find(x=>x.nombre===prod);if(p)p.presentaciones.forEach(x=>prs.innerHTML+=`<option value="${x}">${x}</option>`);}
+        }
+        function actualizarPresentacionesIngreso(){actPresPorProd(document.getElementById('ingCategoria').value,document.getElementById('ingProducto').value,document.getElementById('ingPresentacion'));}
+        function calcularUnidadesIngreso(){const p=parseInt(document.getElementById('ingPaquetes').value)||0;const u=parseInt(document.getElementById('ingUniPorPaquete').value)||0;document.getElementById('ingTotalUnidades').value=p*u;calcularDanos();}
+        function calcularDanos(){
+            const p=parseInt(document.getElementById('ingPaquetes').value)||0;
+            const u=parseInt(document.getElementById('ingUniPorPaquete').value)||0;
+            const pd=parseInt(document.getElementById('ingPaquetesDanados').value)||0;
+            const ud=parseInt(document.getElementById('ingUnidadesDanadas').value)||0;
+            const tu=p*u;const td=(pd*u)+ud;
+            const su=Math.max(0,tu-td);const sp=Math.floor(su/u);
+            document.getElementById('ingTotalUnidades').value=tu;
+            document.getElementById('ingStockPaquetes').value=sp;
+            document.getElementById('ingStockUnidades').value=su;
+        }
 
-    if (recent.length === 0) {
-      el.innerHTML = `<div class="log-item"><span class="empty-text">Sin eventos aún</span></div>`;
-      return;
-    }
+        // ==================== REGISTRAR INGRESO ====================
+        function registrarIngreso(){
+            const data=obtenerDatosIngreso();
+            if(!data){document.getElementById('ingresoMsg').innerHTML='❌ Complete campos obligatorios';document.getElementById('ingresoMsg').style.color='red';return;}
+            logDebug('Guardando ingreso');
+            db.collection('inventario').add({...data,fecha:firebase.firestore.FieldValue.serverTimestamp()})
+                .then(doc=>{
+                    document.getElementById('ingresoMsg').innerHTML=`✅ Ingreso #${doc.id.substring(0,6)} - Stock: ${data.stockPaquetes} paq / ${data.stockUnidades} uni`;
+                    document.getElementById('ingresoMsg').style.color='green';
+                    limpiarFormIngreso();cargarStock();
+                })
+                .catch(e=>{document.getElementById('ingresoMsg').innerHTML='❌ '+e.message;document.getElementById('ingresoMsg').style.color='red';});
+        }
+        function obtenerDatosIngreso(){
+            const c=document.getElementById('ingCategoria').value,p=document.getElementById('ingProducto').value;
+            const pr=document.getElementById('ingPresentacion').value,v=document.getElementById('ingVencimiento').value;
+            if(!c||!p||!pr||!v)return null;
+            return{
+                tipo:'ingreso',categoria:c,ciudad:document.getElementById('ingCiudad').value,
+                producto:p,sabor:(document.getElementById('saborContainerIng').style.display!=='none'?document.getElementById('ingSabor').value:''),
+                presentacion:pr,paquetes:parseInt(document.getElementById('ingPaquetes').value)||0,
+                uniPorPaquete:parseInt(document.getElementById('ingUniPorPaquete').value)||0,
+                totalUnidades:parseInt(document.getElementById('ingTotalUnidades').value)||0,
+                paquetesDanados:parseInt(document.getElementById('ingPaquetesDanados').value)||0,
+                unidadesDanadas:parseInt(document.getElementById('ingUnidadesDanadas').value)||0,
+                stockPaquetes:parseInt(document.getElementById('ingStockPaquetes').value)||0,
+                stockUnidades:parseInt(document.getElementById('ingStockUnidades').value)||0,
+                vencimiento:v,precioCosto:parseFloat(document.getElementById('ingPrecioCosto').value)||0,
+                danado:(parseInt(document.getElementById('ingPaquetesDanados').value)||0)>0||(parseInt(document.getElementById('ingUnidadesDanadas').value)||0)>0,
+                observacion:document.getElementById('ingObservacion').value,
+                fechaStr:new Date().toISOString().split('T')[0],hora:new Date().toLocaleTimeString('es-BO',{hour:'2-digit',minute:'2-digit'})
+            };
+        }
+        function limpiarFormIngreso(){
+            ['ingCategoria','ingProducto','ingPresentacion','ingSabor'].forEach(id=>{
+                const el=document.getElementById(id);if(el)el.value='';
+            });
+            document.getElementById('ingProducto').innerHTML='<option value="">Seleccionar categoría primero</option>';
+            document.getElementById('ingPresentacion').innerHTML='<option value="">Seleccionar presentación...</option>';
+            document.getElementById('saborContainerIng').style.display='none';
+            document.getElementById('ingPaquetes').value='1';document.getElementById('ingUniPorPaquete').value='6';
+            document.getElementById('ingTotalUnidades').value='6';document.getElementById('ingVencimiento').value='';
+            document.getElementById('ingPrecioCosto').value='0';
+            document.getElementById('ingPaquetesDanados').value='0';document.getElementById('ingUnidadesDanadas').value='0';
+            document.getElementById('ingStockPaquetes').value='1';document.getElementById('ingStockUnidades').value='6';
+            document.getElementById('ingObservacion').value='';
+        }
 
-    el.innerHTML = recent.map(rec => {
-      const ok     = rec.permitido === true || rec.estado === 'PERMITIDO';
-      const nombre = (rec.nombre && rec.nombre !== '---') ? rec.nombre : 'Desconocido';
-      const t      = fmtTimeShort(rec);
-      const color  = ok ? 'var(--green)' : 'var(--red)';
-      return `<div class="log-item">
-        <div class="log-item-top">
-          <span class="log-name" style="color:${color}">${nombre}</span>
-          <span class="log-time">${t}</span>
-        </div>
-        <span class="log-sub">${ok ? 'Acceso permitido' : 'Acceso denegado'} · ID #${rec.usuario_id ?? '—'}</span>
-      </div>`;
-    }).join('');
-  }
+        // ==================== EDITAR INGRESO ====================
+        function editarIngreso(docId){
+            db.collection('inventario').doc(docId).get().then(doc=>{
+                if(!doc.exists){alert('No encontrado');return;}
+                const d=doc.data();
+                const modal=document.getElementById('modalEditarIngreso');
+                const cont=document.getElementById('modalEditarContenido');
+                cont.innerHTML=`
+                    <div class="form-grid">
+                        <div class="form-group"><label>Producto</label><input id="editProd" value="${d.producto}" readonly></div>
+                        <div class="form-group"><label>Sabor</label><input id="editSabor" value="${d.sabor||''}"></div>
+                        <div class="form-group"><label>Presentación</label><input id="editPres" value="${d.presentacion}" readonly></div>
+                        <div class="form-group"><label>Paquetes</label><input type="number" id="editPaq" value="${d.paquetes||0}"></div>
+                        <div class="form-group"><label>Uni/Paq</label><input type="number" id="editUniPaq" value="${d.uniPorPaquete||6}"></div>
+                        <div class="form-group"><label>Paq Dañados</label><input type="number" id="editPaqDan" value="${d.paquetesDanados||0}"></div>
+                        <div class="form-group"><label>Uni Dañadas</label><input type="number" id="editUniDan" value="${d.unidadesDanadas||0}"></div>
+                        <div class="form-group"><label>Vencimiento</label><input type="date" id="editVenc" value="${d.vencimiento||''}"></div>
+                        <div class="form-group"><label>Precio de Costo (Bs)</label><input type="number" id="editPrecioCosto" value="${d.precioCosto||0}" step="0.01" min="0"></div>
+                        <div class="form-group"><label>Observación</label><input id="editObs" value="${d.observacion||''}"></div>
+                    </div>`;
+                modal.style.display='flex';
+                document.getElementById('btnGuardarEdicion').onclick=function(){
+                    const np=parseInt(document.getElementById('editPaq').value)||0;
+                    const nu=parseInt(document.getElementById('editUniPaq').value)||0;
+                    const npd=parseInt(document.getElementById('editPaqDan').value)||0;
+                    const nud=parseInt(document.getElementById('editUniDan').value)||0;
+                    const tu=np*nu;const td=(npd*nu)+nud;
+                    const su=Math.max(0,tu-td);const sp=Math.floor(su/nu);
+                    db.collection('inventario').doc(docId).update({
+                        sabor:document.getElementById('editSabor').value,
+                        paquetes:np,uniPorPaquete:nu,totalUnidades:tu,
+                        paquetesDanados:npd,unidadesDanadas:nud,
+                        stockPaquetes:sp,stockUnidades:su,
+                        vencimiento:document.getElementById('editVenc').value,
+                        precioCosto:parseFloat(document.getElementById('editPrecioCosto').value)||0,
+                        observacion:document.getElementById('editObs').value,
+                        danado:(npd>0||nud>0)
+                    }).then(()=>{modal.style.display='none';cargarStock();alert('✅ Actualizado');})
+                    .catch(e=>alert('❌ '+e.message));
+                };
+            });
+        }
 
-  // ================================================
-  //  ACTUALIZAR STATS
-  // ================================================
-  function updateStats(records) {
-    const total   = records.length;
-    const okCount = records.filter(r => r.permitido === true || r.estado === 'PERMITIDO').length;
-    const errCount= total - okCount;
-    const confs   = records.filter(r => r.confianza > 0).map(r => r.confianza);
-    const avgConf = confs.length ? Math.round(confs.reduce((a,b) => a+b, 0) / confs.length) : 0;
+        // ==================== CARGAR STOCK ====================
+        function cargarStock(){
+            const tbody=document.getElementById('stockTableBody');
+            const tbodyB=document.getElementById('stockBonifTableBody');
+            if(tbody) tbody.innerHTML='<tr><td colspan="11" class="loading">Cargando comercial...</td></tr>';
+            if(tbodyB) tbodyB.innerHTML='<tr><td colspan="9" class="loading">Cargando bonos...</td></tr>';
 
-    document.getElementById('stat-ok').textContent    = okCount;
-    document.getElementById('stat-err').textContent   = errCount;
-    document.getElementById('stat-total').textContent = total;
-    document.getElementById('stat-conf').textContent  = avgConf;
+            db.collection('precios').get().then(snapPrecios => {
+                const precios={}; snapPrecios.forEach(d=>{const x=d.data();precios[`${x.producto}|${x.presentacion}`]=x.precio;});
 
-    const okPct  = total ? Math.round(okCount  / total * 100) : 0;
-    const errPct = total ? Math.round(errCount / total * 100) : 0;
-    document.getElementById('stat-ok-pct').textContent  = `${okPct}% del total`;
-    document.getElementById('stat-err-pct').textContent = `${errPct}% del total`;
+                db.collection('inventario').get().then(snap=>{
+                    const todos=[];
+                    snap.forEach(doc=>{const d=doc.data();todos.push({id:doc.id,...d});});
 
-    // Último evento
-    const sorted = [...records].sort((a,b) => (b.timestamp_unix||0)-(a.timestamp_unix||0));
-    if (sorted.length > 0) {
-      document.getElementById('stat-last').textContent = 'Último: ' + fmtTimeShort(sorted[0]);
-    }
-  }
+                    const search=(document.getElementById('stockSearch')?.value||'').toLowerCase();
+                    const fVenc=document.getElementById('stockFilterVencimiento')?.value||'todos';
+                    const fCat=document.getElementById('stockFilterCategoria')?.value||'todos';
+                    const hoy=new Date();hoy.setHours(0,0,0,0);
+                    const lim=new Date(hoy);lim.setDate(lim.getDate()+30);
 
-  // ================================================
-  //  ACTUALIZAR PANEL DISPOSITIVO
-  // ================================================
-  function updateDevice(records) {
-    const sorted = [...records].sort((a,b) => (b.timestamp_unix||0)-(a.timestamp_unix||0));
-    if (sorted.length === 0) return;
-    const last = sorted[0];
-    document.getElementById('dev-id').textContent   = last.dispositivo || '—';
-    document.getElementById('dev-ip').textContent   = last.ip_dispositivo || '—';
-    document.getElementById('dev-ping').textContent = fmtDate(last);
-  }
+                    let filtrados=todos.filter(d=>{
+                        if(search&&!d.producto.toLowerCase().includes(search)&&!(d.sabor||'').toLowerCase().includes(search)&&!d.presentacion.toLowerCase().includes(search))return false;
+                        if(fCat!=='todos'){
+                            const cat=d.categoria||'';
+                            if(fCat==='cervezas'){if(!cat.includes('cervezas'))return false;}
+                            else if(cat!==fCat)return false;
+                        }
+                        if(fVenc==='todos')return true;
+                        const fv=d.vencimiento?new Date(d.vencimiento+'T00:00:00'):null;
+                        if(fVenc==='vencido')return fv&&fv<hoy;
+                        if(fVenc==='proximo')return fv&&fv>=hoy&&fv<=lim;
+                        return fv&&fv>lim;
+                    });
 
-  // ================================================
-  //  FILTRO
-  // ================================================
-  function setFilter(f) {
-    activeFilter = f;
-    document.querySelectorAll('.btn-filter').forEach(b => b.classList.remove('active'));
-    document.getElementById('filter-' + f).classList.add('active');
-    applyFilter();
-  }
+                    filtrados.sort((a,b)=>(a.vencimiento||'9').localeCompare(b.vencimiento||'9'));
 
-  function applyFilter() {
-    let filtered = allRecords;
-    if (activeFilter === 'ok') {
-      filtered = allRecords.filter(r => r.permitido === true || r.estado === 'PERMITIDO');
-    } else if (activeFilter === 'err') {
-      filtered = allRecords.filter(r => r.permitido !== true && r.estado !== 'PERMITIDO');
-    }
-    renderTable(filtered);
-  }
+                    let htmlC='', htmlB='', totalC=0, totalB=0;
+                    filtrados.forEach(d=>{
+                        const fv=d.vencimiento?new Date(d.vencimiento+'T00:00:00'):null;
+                        const vencido=fv&&fv<hoy; const proximo=fv&&fv>=hoy&&fv<=lim;
+                        const badge=vencido?'<span class="badge badge-danger">VENCIDO</span>':(proximo?'<span class="badge badge-warning">PRÓXIMO</span>':'<span class="badge badge-success">VIGENTE</span>');
+                        const claseLote=obtenerClaseLote(d.numeroLote);
+                        const danDisplay = `${d.paquetesDanados||0} / ${d.unidadesDanadas||0}`;
+                        const fechaFormateada = formatearFechaCorta(d.vencimiento);
 
-  // ================================================
-  //  FIREBASE — LISTENER EN TIEMPO REAL
-  // ================================================
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.database();
+                        if(!d.bonificacion) {
+                            const subtotal = (d.stockPaquetes||0)*(d.precioCosto||0);
+                            totalC += subtotal;
+                            htmlC+=`<tr class="${claseLote}">
+                                <td><strong>Lote #${d.numeroLote||'-'}</strong></td>
+                                <td>${fechaFormateada} ${badge}</td>
+                                <td>${d.producto}</td><td>${d.sabor||'-'}</td><td>${d.presentacion}</td>
+                                <td><strong>${d.stockPaquetes||0}</strong></td><td>${d.stockUnidades||0}</td>
+                                <td style="color:var(--danger); font-weight:600;">${danDisplay}</td>
+                                <td>${(d.precioCosto||0).toFixed(2)}</td>
+                                <td><strong>${subtotal.toFixed(2)}</strong></td>
+                                <td><button class="btn btn-xs btn-warning" onclick="editarIngreso('${d.id}')">✏️</button></td>
+                            </tr>`;
+                        } else {
+                            const pVenta = precios[`${d.producto}|${d.presentacion}`] || 0;
+                            const benef = (d.stockPaquetes||0) * pVenta;
+                            totalB += benef;
+                            htmlB+=`<tr class="${claseLote}">
+                                <td><strong>Lote #${d.numeroLote||'-'}</strong></td>
+                                <td>${fechaFormateada} ${badge}</td>
+                                <td>${d.producto}</td><td>${d.sabor||'-'}</td><td>${d.presentacion}</td>
+                                <td><strong>${d.stockPaquetes||0}</strong></td><td>${d.stockUnidades||0}</td>
+                                <td style="color:var(--danger); font-weight:600;">${danDisplay}</td>
+                                <td><button class="btn btn-xs btn-warning" onclick="editarIngreso('${d.id}')">✏️</button></td>
+                            </tr>`;
+                        }
+                    });
 
-  let firstLoad = true;
+                    document.getElementById('totalCostoComercial').textContent = totalC.toFixed(2) + ' Bs';
+                    document.getElementById('totalBeneficioBonos').textContent = totalB.toFixed(2) + ' Bs';
 
-  db.ref('/accesos').on('value',
-    (snapshot) => {
-      // Conectado exitosamente
-      document.getElementById('conn-dot').classList.add('live');
-      document.getElementById('conn-text').textContent = 'En línea';
+                    if(tbody) tbody.innerHTML=htmlC||'<tr><td colspan="11" style="text-align:center;">No hay productos comerciales</td></tr>';
+                    if(tbodyB) tbodyB.innerHTML=htmlB||'<tr><td colspan="9" style="text-align:center;">No hay bonificaciones</td></tr>';
+                }).catch(e=>{
+                    if(tbody) tbody.innerHTML=`<tr><td colspan="11" style="color:red;">Error: ${e.message}</td></tr>`;
+                });
+            });
+        }
 
-      const raw = snapshot.val();
+        // ==================== PRECIOS ====================
+        function cargarPrecios(){
+            const tbody=document.getElementById('preciosTableBody');
+            tbody.innerHTML='<tr><td colspan="5" class="loading">Cargando...</td></tr>';
+            const lista=[];
+            Object.entries(catalogoCompleto).forEach(([k,cat])=>{
+                if(cat.producto)cat.presentaciones.forEach(pr=>lista.push({cat:cat.categoria,prod:cat.producto,pres:pr}));
+                else if(cat.productos)cat.productos.forEach(p=>p.presentaciones.forEach(pr=>lista.push({cat:cat.categoria,prod:p.nombre,pres:pr})));
+            });
+            db.collection('precios').get().then(snap=>{
+                const precios={};snap.forEach(d=>{const x=d.data();precios[`${x.producto}|${x.presentacion}`]=x.precio;});
+                tbody.innerHTML=lista.map(p=>{
+                    const k=`${p.prod}|${p.pres}`;const v=precios[k]||0;
+                    const id=`precio_${k.replace(/[^a-zA-Z0-9]/g,'_')}`;
+                    return `<tr><td>${p.cat}</td><td>${p.prod}</td><td>${p.pres}</td>
+                        <td><input type="number" id="${id}" value="${v}" min="0" step="0.01" style="width:100px;"></td>
+                        <td><button class="btn btn-xs btn-primary" onclick="guardarPrecio('${p.prod}','${p.pres}','${id}')">💾</button></td></tr>`;
+                }).join('');
+            });
+        }
+        function guardarPrecio(prod,pres,inputId){
+            const precio=parseFloat(document.getElementById(inputId).value)||0;
+            const msg=document.getElementById('preciosMsg');
+            db.collection('precios').where('producto','==',prod).where('presentacion','==',pres).get().then(snap=>{
+                if(snap.empty)return db.collection('precios').add({producto:prod,presentacion:pres,precio});
+                else{const b=db.batch();snap.forEach(d=>b.update(d.ref,{precio}));return b.commit();}
+            }).then(()=>{msg.innerHTML=`✅ ${prod} ${pres}: ${precio.toFixed(2)} Bs`;msg.style.color='green';})
+            .catch(e=>{msg.innerHTML='❌ '+e.message;msg.style.color='red';});
+        }
 
-      if (!raw) {
-        allRecords = [];
-        renderTable([]);
-        renderMini([]);
-        updateStats([]);
-        return;
-      }
+        // ==================== SALIDA (CON AUTO-SELECCIÓN POR VENCIMIENTO) ====================
+        function actualizarProductosSalida(){
+            const cat=document.getElementById('salCategoria').value;
+            const ps=document.getElementById('salProducto');
+            const prs=document.getElementById('salPresentacion');
+            const sc=document.getElementById('saborContainerSal');
+            ps.innerHTML='<option value="">Seleccionar...</option>';
+            prs.innerHTML='<option value="">Seleccionar...</option>';
+            sc.style.display='none';
+            document.getElementById('stockDisponibleInfo').style.display='none';
+            if(!cat)return;
+            const c=catalogoCompleto[cat];
+            if(cat==='sodas'){sc.style.display='flex';ps.innerHTML='<option value="Mendocina">Mendocina</option>';ps.value='Mendocina';c.presentaciones.forEach(p=>prs.innerHTML+=`<option value="${p}">${p}</option>`);}
+            else if(cat==='agua'){ps.innerHTML='<option value="Agua">Agua</option>';ps.value='Agua';c.presentaciones.forEach(p=>prs.innerHTML+=`<option value="${p}">${p}</option>`);}
+            else if(c.productos){c.productos.forEach(p=>ps.innerHTML+=`<option value="${p.nombre}">${p.nombre}</option>`);ps.onchange=function(){actPresPorProd(cat,this.value,prs);};}
+        }
+        function actualizarPresentacionesSalida(){actPresPorProd(document.getElementById('salCategoria').value,document.getElementById('salProducto').value,document.getElementById('salPresentacion'));}
 
-      // Convertir objeto Firebase a array
-      allRecords = Object.entries(raw).map(([key, val]) => ({ _key: key, ...val }));
+        function mostrarStockDisponible(){
+            const prod=document.getElementById('salProducto').value;
+            const pres=document.getElementById('salPresentacion').value;
+            const saborEl=document.getElementById('salSabor');
+            const sabor=saborEl&&document.getElementById('saborContainerSal').style.display!=='none'?saborEl.value:'';
+            const infoDiv=document.getElementById('stockDisponibleInfo');
+            const detalleDiv=document.getElementById('stockDisponibleDetalle');
+            if(!prod||!pres){infoDiv.style.display='none';return;}
 
-      updateStats(allRecords);
-      updateDevice(allRecords);
-      renderMini(allRecords);
+            let query=db.collection('inventario').where('producto','==',prod).where('presentacion','==',pres);
+            if(sabor)query=query.where('sabor','==',sabor);
 
-      // En la primera carga no hay animación de "nuevo"
-      const isNew = !firstLoad;
-      firstLoad = false;
-      applyFilter();
-    },
-    (error) => {
-      // Error de conexión
-      document.getElementById('conn-dot').classList.remove('live');
-      document.getElementById('conn-text').textContent = 'Sin conexión';
-      console.error('Firebase error:', error);
+            query.get().then(snap=>{
+                const lotes=[];
+                snap.forEach(doc=>{const d=doc.data();if((d.stockPaquetes||0)>0||(d.stockUnidades||0)>0)lotes.push({id:doc.id,...d});});
+                // Ordenar por vencimiento más cercano
+                lotes.sort((a,b)=>new Date(a.vencimiento+'T00:00:00')-new Date(b.vencimiento+'T00:00:00'));
+                
+                if(lotes.length===0){
+                    detalleDiv.innerHTML='<span style="color:red;">⚠️ Sin stock disponible</span>';
+                }else{
+                    const hoy=new Date();hoy.setHours(0,0,0,0);
+                    let html='<table style="width:100%;font-size:0.8rem;"><thead><tr><th>Vencimiento</th><th>Paq Disp</th><th>Uni Disp</th><th>Estado</th></tr></thead><tbody>';
+                    lotes.forEach(l=>{
+                        const fv=new Date(l.vencimiento+'T00:00:00');
+                        let icono='🟢';if(fv<hoy)icono='🔴';else if(fv<=new Date(hoy.getTime()+30*86400000))icono='🟡';
+                        html+=`<tr><td>${icono} ${formatearFechaCorta(l.vencimiento)}</td><td><strong>${l.stockPaquetes||0}</strong></td><td>${l.stockUnidades||0}</td><td>${fv<hoy?'VENCIDO':fv<=new Date(hoy.getTime()+30*86400000)?'PRÓXIMO':'VIGENTE'}</td></tr>`;
+                    });
+                    html+='</tbody></table>';
+                    html+='<p style="margin-top:0.5rem;font-size:0.8rem;color:#666;">⚠️ Al agregar, se tomarán primero los lotes más próximos a vencer</p>';
+                    detalleDiv.innerHTML=html;
+                }
+                infoDiv.style.display='block';
+            });
+        }
 
-      document.getElementById('log-tbody').innerHTML = `<tr><td colspan="7">
-        <div class="empty-state">
-          <span class="empty-text" style="color:var(--red)">Error al conectar con Firebase. Revisa las reglas de seguridad.</span>
-        </div></td></tr>`;
-    }
-  );
-</script>
+        function agregarProductoSalida(){
+            const prod=document.getElementById('salProducto').value;
+            const pres=document.getElementById('salPresentacion').value;
+            const cantSolicitada=parseInt(document.getElementById('salCantidad').value)||0;
+            const saborEl=document.getElementById('salSabor');
+            const sabor=saborEl&&document.getElementById('saborContainerSal').style.display!=='none'?saborEl.value:'';
+
+            if(!prod||!pres||cantSolicitada<=0){alert('Complete producto, presentación y cantidad');return;}
+
+            // AUTO-SELECCIÓN por vencimiento
+            let query=db.collection('inventario').where('producto','==',prod).where('presentacion','==',pres);
+            if(sabor)query=query.where('sabor','==',sabor);
+
+            query.get().then(snap=>{
+                const lotes=[];
+                snap.forEach(doc=>{const d=doc.data();if((d.stockPaquetes||0)>0)lotes.push({id:doc.id,...d});});
+                lotes.sort((a,b)=>new Date(a.vencimiento+'T00:00:00')-new Date(b.vencimiento+'T00:00:00'));
+
+                let restante=cantSolicitada;
+                const seleccionados=[];
+                for(const l of lotes){
+                    if(restante<=0)break;
+                    const tomar=Math.min(l.stockPaquetes||0,restante);
+                    if(tomar>0){
+                        seleccionados.push({...l,tomados:tomar});
+                        restante-=tomar;
+                    }
+                }
+
+                if(restante>0){
+                    alert(`⚠️ Solo hay ${cantSolicitada-restante} paquetes disponibles. Faltan ${restante} paquetes.`);
+                }
+
+                // Obtener precio
+                db.collection('precios').where('producto','==',prod).where('presentacion','==',pres).get().then(psnap=>{
+                    let precio=0;
+                    if(!psnap.empty)precio=psnap.docs[0].data().precio||0;
+
+                    seleccionados.forEach(s=>{
+                        const existente=productosEnSalida.find(x=>x.producto===prod&&x.sabor===sabor&&x.presentacion===pres&&x.vencimiento===s.vencimiento);
+                        if(existente){
+                            existente.cantidad+=s.tomados;
+                            existente.subtotal=existente.cantidad*existente.precio;
+                        }else{
+                            productosEnSalida.push({
+                                producto:prod,sabor, presentacion:pres,
+                                cantidad:s.tomados,precio,
+                                subtotal:s.tomados*precio,
+                                vencimiento:s.vencimiento,
+                                loteIds:[s.id]
+                            });
+                        }
+                    });
+
+                    renderizarTablaSalida();
+                    document.getElementById('salCantidad').value='1';
+                });
+            });
+        }
+
+        function renderizarTablaSalida(){
+            const tbody=document.getElementById('salidaTableBody');
+            let tp=0,tb=0;
+            if(productosEnSalida.length===0){
+                tbody.innerHTML='<tr><td colspan="8" style="text-align:center;color:#999;">No hay productos</td></tr>';
+            }else{
+                tbody.innerHTML=productosEnSalida.map((p,i)=>{
+                    tp+=p.cantidad;tb+=p.subtotal;
+                    return `<tr>
+                        <td>${p.producto}</td><td>${p.sabor||'-'}</td><td>${p.presentacion}</td>
+                        <td>${p.cantidad}</td><td>${p.precio.toFixed(2)}</td><td><strong>${p.subtotal.toFixed(2)}</strong></td>
+                        <td>${formatearFechaCorta(p.vencimiento)}</td>
+                        <td><button class="btn btn-xs btn-danger" onclick="eliminarProdSalida(${i})">🗑️</button></td>
+                    </tr>`;
+                }).join('');
+            }
+            document.getElementById('salidaTotalPaquetes').textContent=tp;
+            document.getElementById('salidaTotalBs').textContent=tb.toFixed(2);
+        }
+
+        function eliminarProdSalida(i){productosEnSalida.splice(i,1);renderizarTablaSalida();}
+
+        function registrarSalida(){
+            const chofer=document.getElementById('salidaChofer').value.trim();
+            const destino=document.getElementById('salidaDestino').value.trim();
+            const observacion=document.getElementById('salidaObservacion').value.trim();
+            const msg=document.getElementById('salidaMsg');
+            if(!chofer){msg.innerHTML='❌ Ingrese el chofer';msg.style.color='red';return;}
+            if(productosEnSalida.length===0){msg.innerHTML='❌ Agregue productos';msg.style.color='red';return;}
+
+            const totalBs=productosEnSalida.reduce((s,p)=>s+p.subtotal,0);
+            const totalPaq=productosEnSalida.reduce((s,p)=>s+p.cantidad,0);
+
+            const salidaData={
+                tipo:'salida',chofer,destino:destino||'No especificado',
+                observacion:observacion||'',
+                productos:productosEnSalida,totalBs,totalPaquetes:totalPaq,
+                estado:'pendiente',
+                fecha:firebase.firestore.FieldValue.serverTimestamp(),
+                fechaStr:new Date().toISOString().split('T')[0],
+                hora:new Date().toLocaleTimeString('es-BO',{hour:'2-digit',minute:'2-digit'})
+            };
+
+            // Descontar stock
+            const batch=db.batch();
+            const ref=db.collection('salidas').doc();
+            batch.set(ref,salidaData);
+            productosEnSalida.forEach(p=>{
+                // Buscar el lote en inventario y descontar
+                db.collection('inventario').where('producto','==',p.producto)
+                    .where('presentacion','==',p.presentacion)
+                    .where('vencimiento','==',p.vencimiento).limit(1).get()
+                    .then(snap=>{
+                        snap.forEach(doc=>{
+                            const actual=doc.data().stockPaquetes||0;
+                            batch.update(doc.ref,{stockPaquetes:Math.max(0,actual-p.cantidad)});
+                        });
+                    });
+            });
+
+            batch.commit().then(()=>{
+                msg.innerHTML=`✅ Salida registrada - ${totalPaq} paq - ${totalBs.toFixed(2)} Bs`;
+                msg.style.color='green';
+                document.getElementById('salidaChofer').value='';document.getElementById('salidaDestino').value='';
+                document.getElementById('salidaObservacion').value='';
+                productosEnSalida=[];renderizarTablaSalida();
+                cargarStock();cargarSalidasPendientes();
+            }).catch(e=>{msg.innerHTML='❌ '+e.message;msg.style.color='red';});
+        }
+
+        // ==================== RENDICIÓN ====================
+        function cargarSalidasPendientes(){
+            const select=document.getElementById('rendicionSalidaId');
+            select.innerHTML='<option value="">Cargando...</option>';
+            db.collection('salidas').get().then(snap=>{
+                const pendientes=[];
+                snap.forEach(doc=>{const d=doc.data();if(d.estado==='pendiente')pendientes.push({id:doc.id,...d});});
+                pendientes.sort((a,b)=>b.fechaStr.localeCompare(a.fechaStr));
+                select.innerHTML='<option value="">Seleccionar salida pendiente...</option>';
+                if(pendientes.length===0)select.innerHTML+='<option value="" disabled>No hay pendientes</option>';
+                else pendientes.forEach(d=>select.innerHTML+=`<option value="${d.id}">${d.chofer} - ${formatearFechaCorta(d.fechaStr)} ${d.hora} - ${d.totalBs?.toFixed(2)||'0'} Bs</option>`);
+            }).catch(e=>{select.innerHTML=`<option value="">Error: ${e.message}</option>`;});
+        }
+
+        function cargarDatosRendicion(){
+            const id=document.getElementById('rendicionSalidaId').value;
+            const div=document.getElementById('rendicionDetalle');
+            div.innerHTML='';if(!id)return;
+            db.collection('salidas').doc(id).get().then(doc=>{
+                if(!doc.exists){div.innerHTML='<p style="color:red;">No encontrada</p>';return;}
+                const d=doc.data();
+                let html=`<fieldset><legend>📋 Salida: ${d.chofer}</legend>
+                    <p><strong>Fecha:</strong> ${formatearFechaCorta(d.fechaStr)} ${d.hora} | <strong>Destino:</strong> ${d.destino||'-'}</p>
+                    <p><strong>Observación:</strong> ${d.observacion||'Ninguna'}</p>
+                    <p><strong>Total Salida:</strong> ${d.totalBs.toFixed(2)} Bs | <strong>Paquetes:</strong> ${d.totalPaquetes}</p></fieldset>
+                    
+                    <fieldset><legend>🔄 Registrar Retorno y Dañados</legend>
+                    <div class="table-container"><table>
+                        <thead><tr><th>Producto</th><th>Presentación</th><th>Salió</th><th>Devuelto (Paq)</th><th>Dañado (Paq)</th><th>Dañado (Uni)</th></tr></thead><tbody>`;
+                
+                d.productos.forEach((p,i)=>{
+                    html+=`<tr>
+                        <td>
+                            ${p.producto} ${p.sabor||''} <br>
+                            <button class="btn-rebaja" onclick="agregarFilaRebaja(${i}, ${p.precio}, ${d.totalBs})">➕ Rebaja</button>
+                        </td>
+                        <td>${p.presentacion} (Ref: ${p.precio} Bs)</td>
+                        <td>${p.cantidad}</td>
+                        <td><input type="number" id="retDev_${i}" min="0" max="${p.cantidad}" value="0" oninput="calcRend(${d.totalBs})" style="width:70px;"></td>
+                        <td><input type="number" id="retDan_${i}" min="0" max="${p.cantidad}" value="0" oninput="calcRend(${d.totalBs})" style="width:70px;"></td>
+                        <td><input type="number" id="retDanU_${i}" min="0" max="12" value="0" oninput="calcRend(${d.totalBs})" style="width:70px;"></td>
+                    </tr>
+                    <tbody id="rebajas_${i}"></tbody>`;
+                });
+                
+                html+=`</tbody></table></div>
+                    <div class="totals-box">
+                        <div class="total-item"><span class="label">Total Devuelto/Dañado</span><span class="value" id="rendDevuelto">0.00 Bs</span></div>
+                        <div class="total-item"><span class="label">A Rendir (Efectivo/Pagos)</span><span class="value" id="rendRendir" style="color:var(--success);">${d.totalBs.toFixed(2)} Bs</span></div>
+                    </div></fieldset>
+
+                    <fieldset><legend>💰 Desglose de Pago Recibido</legend>
+                        <div class="payment-grid">
+                            <div class="form-group">
+                                <label>💵 Efectivo (Bs)</label>
+                                <input type="number" id="pagoEfec" value="0" step="0.01" min="0" oninput="calcPagos()">
+                            </div>
+                            <div class="form-group">
+                                <label>📱 QR (Bs)</label>
+                                <input type="number" id="pagoQR" value="0" step="0.01" min="0" oninput="calcPagos()">
+                                <input type="text" id="refQR" placeholder="Ref/Transacción" style="margin-top:0.3rem; font-size:0.75rem;">
+                            </div>
+                            <div class="form-group">
+                                <label>🏦 Transferencia (Bs)</label>
+                                <input type="number" id="pagoTrans" value="0" step="0.01" min="0" oninput="calcPagos()">
+                                <input type="text" id="refTrans" placeholder="Nro de Operación" style="margin-top:0.3rem; font-size:0.75rem;">
+                            </div>
+                            <div class="form-group">
+                                <label>💳 Crédito Cliente (Bs)</label>
+                                <input type="number" id="pagoCred" value="0" step="0.01" min="0" oninput="toggleCredito(this.value);calcPagos();">
+                            </div>
+                        </div>
+
+                        <div id="seccionCredito" class="credit-section">
+                            <h4 style="margin-bottom:0.8rem;color:var(--primary);">👤 Datos del Cliente y Nota de Pedido</h4>
+                            <div class="form-grid">
+                                <div class="form-group"><label>Nro Nota/Recibo</label><input type="text" id="creNota" placeholder="Ej: 00123"></div>
+                                <div class="form-group"><label>Nombre del Cliente</label><input type="text" id="creNombre" placeholder="Nombre completo"></div>
+                                <div class="form-group"><label>Celular 1</label><input type="text" id="creCel1" placeholder="70000000"></div>
+                                <div class="form-group"><label>Celular 2</label><input type="text" id="creCel2" placeholder="Opcional"></div>
+                                <div class="form-group" style="grid-column: 1 / -1;"><label>Dirección</label><input type="text" id="creDir" placeholder="Zona, calle, etc."></div>
+                                <div class="form-group"><label>¿Qué día pagará?</label><input type="date" id="creFecha"></div>
+                            </div>
+                        </div>
+
+                        <div class="validation-bar"><div id="vProgress" class="validation-progress"></div></div>
+                        <div id="vMsg" class="diff-msg">Faltan registrar pagos...</div>
+                        
+                        <div style="margin-top:1.5rem; text-align:right;">
+                            <button class="btn btn-success" id="btnConfirmarRendicion" onclick="confirmarRendicion('${id}',${d.totalBs})" disabled>✅ Confirmar Rendición Total</button>
+                        </div>
+                    </fieldset>`;
+                
+                div.innerHTML=html;
+                window._rendProd=d.productos;
+                window._totalARendir = d.totalBs;
+                calcRend(d.totalBs);
+            });
+        }
+
+        function toggleCredito(val){
+            const sec = document.getElementById('seccionCredito');
+            sec.style.display = parseFloat(val) > 0 ? 'block' : 'none';
+        }
+
+        function agregarFilaRebaja(prodIdx, precioRef, totalSalida) {
+            const tbody = document.getElementById(`rebajas_${prodIdx}`);
+            const tr = document.createElement('tr');
+            tr.className = 'rebaja-row';
+            tr.innerHTML = `
+                <td colspan="2" style="text-align:right;">↳ Rebaja:</td>
+                <td><input type="number" class="rebaja-cant-${prodIdx}" placeholder="Cant" oninput="calcRend(${totalSalida})" style="width:60px;"></td>
+                <td><input type="number" class="rebaja-prec-${prodIdx}" placeholder="Precio" value="${precioRef}" oninput="calcRend(${totalSalida})" style="width:70px;"></td>
+                <td><input type="text" class="rebaja-autor-${prodIdx}" placeholder="¿Quién rebajó?" style="width:100px; font-size:0.7rem;"></td>
+                <td><button class="btn btn-xs btn-danger" onclick="this.closest('tr').remove();calcRend(${totalSalida});">✕</button></td>
+            `;
+            tbody.appendChild(tr);
+        }
+
+        function calcRend(totalSalida){
+            const prods=window._rendProd||[];let td=0; let rebajasTotal = 0;
+            prods.forEach((p,i)=>{
+                const dev=parseInt(document.getElementById('retDev_'+i)?.value)||0;
+                const danP=parseInt(document.getElementById('retDan_'+i)?.value)||0;
+                const danU=parseInt(document.getElementById('retDanU_'+i)?.value)||0;
+                
+                // Restamos del total inicial los devueltos y dañados a precio normal
+                td+=(dev * p.precio) + (danP * p.precio) + (danU * (p.precio / (p.uniPorPaquete||6)));
+
+                // Calculamos rebajas: La diferencia entre el precio ref y el precio rebajado
+                const cants = document.getElementsByClassName(`rebaja-cant-${i}`);
+                const precs = document.getElementsByClassName(`rebaja-prec-${i}`);
+                for(let j=0; j<cants.length; j++) {
+                    const c = parseFloat(cants[j].value)||0;
+                    const pr = parseFloat(precs[j].value)||0;
+                    // El "descuento" es (Precio Original - Precio Rebajado) * Cantidad
+                    rebajasTotal += (p.precio - pr) * c;
+                }
+            });
+            const aRendir = totalSalida - td - rebajasTotal;
+            window._totalARendir = aRendir;
+            document.getElementById('rendDevuelto').textContent=(td + rebajasTotal).toFixed(2)+' Bs';
+            document.getElementById('rendRendir').textContent=aRendir.toFixed(2)+' Bs';
+            calcPagos();
+        }
+
+        function calcPagos(){
+            const efec = parseFloat(document.getElementById('pagoEfec')?.value)||0;
+            const qr = parseFloat(document.getElementById('pagoQR')?.value)||0;
+            const trans = parseFloat(document.getElementById('pagoTrans')?.value)||0;
+            const cred = parseFloat(document.getElementById('pagoCred')?.value)||0;
+            
+            const totalPagado = efec + qr + trans + cred;
+            const objetivo = window._totalARendir || 0;
+            const dif = objetivo - totalPagado;
+            
+            const progress = document.getElementById('vProgress');
+            const msg = document.getElementById('vMsg');
+            const btn = document.getElementById('btnConfirmarRendicion');
+            
+            const perc = Math.min(100, (totalPagado / objetivo) * 100);
+            progress.style.width = perc + '%';
+            
+            if(Math.abs(dif) < 0.01){
+                msg.innerHTML = '✅ Montos coinciden perfectamente';
+                msg.style.color = 'green';
+                progress.style.background = 'var(--success)';
+                btn.disabled = false;
+            } else if(dif > 0){
+                msg.innerHTML = `⚠️ Faltan <strong>${dif.toFixed(2)} Bs</strong> por asignar`;
+                msg.style.color = 'orange';
+                progress.style.background = '#f39c12';
+                btn.disabled = true;
+            } else {
+                msg.innerHTML = `❌ Sobran <strong>${Math.abs(dif).toFixed(2)} Bs</strong> asignados`;
+                msg.style.color = 'red';
+                progress.style.background = 'var(--danger)';
+                btn.disabled = true;
+            }
+        }
+
+        function confirmarRendicion(salidaId,totalSalida){
+            const prods=window._rendProd||[];let td=0; let rebajasTotal = 0; const ret=[];
+            prods.forEach((p,i)=>{
+                const dev=parseInt(document.getElementById('retDev_'+i)?.value)||0;
+                const danP=parseInt(document.getElementById('retDan_'+i)?.value)||0;
+                const danU=parseInt(document.getElementById('retDanU_'+i)?.value)||0;
+                
+                const cants = document.getElementsByClassName(`rebaja-cant-${i}`);
+                const precs = document.getElementsByClassName(`rebaja-prec-${i}`);
+                const autors = document.getElementsByClassName(`rebaja-autor-${i}`);
+                const subRebajas = [];
+                for(let j=0; j<cants.length; j++) {
+                    const c = parseFloat(cants[j].value)||0;
+                    const pr = parseFloat(precs[j].value)||0;
+                    const au = autors[j]?.value || 'S/A';
+                    if(c > 0) {
+                        rebajasTotal += (p.precio - pr) * c;
+                        subRebajas.push({cant: c, precio: pr, autor: au});
+                    }
+                }
+
+                const vendidoTotal=p.cantidad-dev-danP; 
+                td+=(dev * p.precio) + (danP * p.precio) + (danU * (p.precio / (p.uniPorPaquete||6)));
+                ret.push({...p,devuelto:dev,danado:danP,danadoUni:danU,vendido:vendidoTotal, rebajas: subRebajas});
+            });
+
+            const efec = parseFloat(document.getElementById('pagoEfec').value)||0;
+            const qr = parseFloat(document.getElementById('pagoQR').value)||0;
+            const refQR = document.getElementById('refQR')?.value || '';
+            const trans = parseFloat(document.getElementById('pagoTrans').value)||0;
+            const refTrans = document.getElementById('refTrans')?.value || '';
+            const cred = parseFloat(document.getElementById('pagoCred').value)||0;
+
+            const totalFinalRendido = totalSalida - td - rebajasTotal;
+
+            const rendData = {
+                tipo:'rendicion',
+                salidaId,
+                totalSalida,
+                totalDevuelto: td + rebajasTotal,
+                totalRendir: totalFinalRendido,
+                pagos: {
+                    efectivo: efec,
+                    qr: qr, refQR: refQR,
+                    transferencia: trans, refTrans: refTrans,
+                    credito: cred
+                },
+                cliente: cred > 0 ? {
+                    nota: document.getElementById('creNota').value,
+                    nombre: document.getElementById('creNombre').value,
+                    cel1: document.getElementById('creCel1').value,
+                    cel2: document.getElementById('creCel2').value,
+                    direccion: document.getElementById('creDir').value,
+                    fechaPago: document.getElementById('creFecha').value,
+                    estadoPago: 'pendiente'
+                } : null,
+                productos:ret,
+                fecha:firebase.firestore.FieldValue.serverTimestamp(),
+                fechaStr:new Date().toISOString().split('T')[0],
+                hora:new Date().toLocaleTimeString('es-BO',{hour:'2-digit',minute:'2-digit'})
+            };
+
+            const batch=db.batch();
+            batch.set(db.collection('rendiciones').doc(), rendData);
+            batch.update(db.collection('salidas').doc(salidaId),{
+                estado:'rendido',
+                retorno:ret,
+                totalDevuelto: td + rebajasTotal,
+                totalRendido: totalFinalRendido,
+                pagos: rendData.pagos,
+                cliente: rendData.cliente
+            });
+
+            batch.commit().then(()=>{
+                document.getElementById('rendicionMsg').innerHTML=`✅ Rendición exitosa - Bs ${efec} Efec, Bs ${qr} QR, Bs ${trans} Trans, Bs ${cred} Cred`;
+                document.getElementById('rendicionMsg').style.color='green';
+                document.getElementById('rendicionDetalle').innerHTML='';
+                document.getElementById('rendicionSalidaId').value='';
+                cargarSalidasPendientes();cargarStock();
+            }).catch(e=>{document.getElementById('rendicionMsg').innerHTML='❌ '+e.message;document.getElementById('rendicionMsg').style.color='red';});
+        }
+
+        // ==================== HISTORIAL (MÁS NUEVO PRIMERO, CON FILTRO DE FECHAS) ====================
+        function cargarHistorial(){
+            const tbody=document.getElementById('historialTableBody');
+            tbody.innerHTML='<tr><td colspan="4" class="loading">Cargando...</td></tr>';
+            Promise.all([
+                db.collection('inventario').where('tipo','==','ingreso').get(),
+                db.collection('salidas').get(),
+                db.collection('rendiciones').get()
+            ]).then(([ing,sal,ren])=>{
+                let todos=[];
+                ing.forEach(d=>{const dt=d.data();todos.push({f:dt.fechaStr+' '+dt.hora,t:'INGRESO',det:`📥 ${dt.producto} ${dt.sabor||''} ${dt.presentacion} - ${dt.stockPaquetes||dt.paquetes||0} paq - Costo: ${(dt.precioCosto||0).toFixed(2)} Bs/paq`,m:(dt.stockPaquetes||dt.paquetes||0)*(dt.precioCosto||0),fechaStr:dt.fechaStr});});
+                sal.forEach(d=>{const dt=d.data();todos.push({f:dt.fechaStr+' '+dt.hora,t:'SALIDA',det:`🚚 ${dt.chofer} → ${dt.destino||'-'} - ${dt.totalPaquetes||0} paq${dt.observacion?' | Obs: '+dt.observacion:''}`,m:dt.totalBs||0,fechaStr:dt.fechaStr});});
+                ren.forEach(d=>{
+                    const dt=d.data();
+                    let detalle = `🔄 Rendido: ${dt.totalRendir?.toFixed(2)||0} Bs`;
+                    if(dt.pagos){
+                        const p = dt.pagos;
+                        detalle += ` (💵 ${p.efectivo||0} | 📱 ${p.qr||0}${p.refQR?' REF:'+p.refQR:''} | 🏦 ${p.transferencia||0}${p.refTrans?' OP:'+p.refTrans:''} | 💳 ${p.credito||0})`;
+                        if(p.credito > 0 && dt.cliente) detalle += ` - Nota: ${dt.cliente.nota || ''} Cliente: ${dt.cliente.nombre || '?'}`;
+                    }
+                    todos.push({f:dt.fechaStr+' '+dt.hora,t:'RENDICIÓN',det:detalle,m:dt.totalRendir||0,fechaStr:dt.fechaStr});
+                });
+                // Ordenar más nuevo primero
+                todos.sort((a,b)=>b.f.localeCompare(a.f));
+                
+                const search=(document.getElementById('histSearch')?.value||'').toLowerCase();
+                const tipoF=document.getElementById('histTipo')?.value||'todos';
+                const desde=document.getElementById('histFechaDesde')?.value||'';
+                const hasta=document.getElementById('histFechaHasta')?.value||'';
+                
+                const filtrados=todos.filter(t=>{
+                    if(tipoF!=='todos'&&t.t.toLowerCase()!==tipoF)return false;
+                    if(search&&!t.det.toLowerCase().includes(search))return false;
+                    if(desde&&t.fechaStr<desde)return false;
+                    if(hasta&&t.fechaStr>hasta)return false;
+                    return true;
+                });
+                
+                tbody.innerHTML=filtrados.map(t=>`<tr><td>${formatearFechaCorta(t.fechaStr)} ${t.f.split(' ')[1]}</td><td>${t.t}</td><td>${t.det}</td><td><strong>${t.m.toFixed(2)} Bs</strong></td></tr>`).join('')||'<tr><td colspan="4" style="text-align:center;">Sin registros</td></tr>';
+            }).catch(e=>{tbody.innerHTML=`<tr><td colspan="4" style="color:red;">Error: ${e.message}</td></tr>`;});
+        }
+
+        // ==================== GESTIÓN DE DEUDORES ====================
+        function cargarDeudores(){
+            const tbody = document.getElementById('deudoresTableBody');
+            if(!tbody) return;
+            tbody.innerHTML = '<tr><td colspan="8" class="loading">Buscando deudas pendientes...</td></tr>';
+            
+            db.collection('rendiciones').where('pagos.credito', '>', 0).get().then(snap => {
+                let deudas = [];
+                snap.forEach(doc => {
+                    const d = doc.data();
+                    if(d.cliente && d.cliente.estadoPago !== 'pagado') {
+                        deudas.push({id: doc.id, ...d});
+                    }
+                });
+
+                const search = document.getElementById('deudoresSearch')?.value.toLowerCase() || '';
+                const filtrados = deudas.filter(x => 
+                    x.cliente.nombre.toLowerCase().includes(search) || 
+                    (x.cliente.nota || '').toLowerCase().includes(search)
+                );
+
+                filtrados.sort((a,b) => (a.cliente.fechaPago || '').localeCompare(b.cliente.fechaPago || ''));
+
+                if(filtrados.length === 0){
+                    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:2rem; color:#888;">No hay deudas pendientes</td></tr>';
+                    return;
+                }
+
+                const hoy = new Date().toISOString().split('T')[0];
+                tbody.innerHTML = filtrados.map(d => {
+                    const c = d.cliente;
+                    const vencido = c.fechaPago && c.fechaPago < hoy;
+                    const celClean = c.cel1.replace(/\D/g, '');
+                    const waLink = `https://wa.me/591${celClean}`;
+                    
+                    return `<tr class="${vencido ? 'vencido' : ''}">
+                        <td>${formatearFechaCorta(d.fechaStr)}</td>
+                        <td><strong>${c.nombre}</strong></td>
+                        <td>
+                            ${c.cel1}
+                            <a href="${waLink}" target="_blank" title="Enviar WhatsApp" style="text-decoration:none; margin-left:5px;">🟢📲</a>
+                        </td>
+                        <td><span class="badge badge-info">${c.nota || 'S/N'}</span></td>
+                        <td><strong style="color:var(--danger);">${d.pagos.credito.toFixed(2)} Bs</strong></td>
+                        <td>${formatearFechaCorta(c.fechaPago)}</td>
+                        <td>${vencido ? '<span class="badge badge-danger">VENCIDO</span>' : '<span class="badge badge-warning">PENDIENTE</span>'}</td>
+                        <td><button class="btn btn-xs btn-success" onclick="cobrarDeuda('${d.id}', ${d.pagos.credito})">💰 Cobrar</button></td>
+                    </tr>`;
+                }).join('');
+            }).catch(e => {
+                tbody.innerHTML = `<tr><td colspan="8" style="color:red;">Error: ${e.message}</td></tr>`;
+            });
+        }
+
+        function cobrarDeuda(docId, monto){
+            if(!confirm(`¿Confirmar cobro de ${monto.toFixed(2)} Bs?`)) return;
+            db.collection('rendiciones').doc(docId).update({
+                "cliente.estadoPago": "pagado",
+                "cliente.fechaCobro": firebase.firestore.FieldValue.serverTimestamp(),
+                "cliente.pagoFinalizado": true
+            }).then(() => {
+                alert('✅ Deuda marcada como pagada');
+                cargarDeudores();
+            }).catch(e => alert('❌ Error: ' + e.message));
+        }
+
+        // ==================== LOTES DE CAMIÓN ====================
+        let productosLoteCredito = [];
+        let productosLoteBonificacion = [];
+        let tipoProductoActual = 'credito';
+
+        function obtenerCategoriaProducto(producto){
+            for(const [key,cat] of Object.entries(catalogoCompleto)){
+                if(cat.producto===producto)return cat.categoria;
+                if(cat.productos&&cat.productos.find(p=>p.nombre===producto))return cat.categoria;
+            }
+            return 'Sin categoría';
+        }
+
+        function abrirFormProductoCredito(){tipoProductoActual='credito';document.getElementById('modalProductoTitulo').textContent='➕ Agregar Producto a CRÉDITO';document.getElementById('modCostoContainer').style.display='flex';document.getElementById('modalAgregarProductoLote').style.display='flex';}
+        function abrirFormProductoBonificacion(){tipoProductoActual='bonificacion';document.getElementById('modalProductoTitulo').textContent='➕ Agregar Producto a BONIFICACIÓN';document.getElementById('modCostoContainer').style.display='none';document.getElementById('modalAgregarProductoLote').style.display='flex';}
+        function cerrarModalProductoLote(){document.getElementById('modalAgregarProductoLote').style.display='none';limpiarFormProductoLote();}
+
+        function limpiarFormProductoLote(){
+            ['modProdCategoria','modProdProducto','modProdPresentacion','modProdSabor'].forEach(id=>document.getElementById(id).value='');
+            document.getElementById('modProdVencimiento').value='';
+            document.getElementById('modProdPaquetes').value='1';
+            document.getElementById('modProdUniPaq').value='6';
+            document.getElementById('modProdPrecioCosto').value='0';
+            document.getElementById('modProdDanados').value='0';
+            document.getElementById('modProdUniDanadas').value='0';
+            document.getElementById('modSaborContainer').style.display='none';
+        }
+
+        function modActualizarProductos(){
+            const cat=document.getElementById('modProdCategoria').value;
+            const ps=document.getElementById('modProdProducto');
+            const prs=document.getElementById('modProdPresentacion');
+            const sc=document.getElementById('modSaborContainer');
+            ps.innerHTML='<option value="">Seleccionar...</option>';
+            prs.innerHTML='<option value="">Seleccionar...</option>';
+            sc.style.display='none';
+            if(!cat)return;
+            const c=catalogoCompleto[cat];
+            if(cat==='sodas'){sc.style.display='flex';ps.innerHTML='<option value="Mendocina">Mendocina</option>';ps.value='Mendocina';c.presentaciones.forEach(p=>prs.innerHTML+=`<option value="${p}">${p}</option>`);}
+            else if(cat==='agua'){ps.innerHTML='<option value="Agua">Agua</option>';ps.value='Agua';c.presentaciones.forEach(p=>prs.innerHTML+=`<option value="${p}">${p}</option>`);}
+            else if(c.productos){c.productos.forEach(p=>ps.innerHTML+=`<option value="${p.nombre}">${p.nombre}</option>`);ps.onchange=function(){modActualizarPresentaciones();};}
+        }
+
+        function modActualizarPresentaciones(){
+            const cat=document.getElementById('modProdCategoria').value;
+            const prod=document.getElementById('modProdProducto').value;
+            const prs=document.getElementById('modProdPresentacion');
+            prs.innerHTML='<option value="">Seleccionar...</option>';
+            if(!prod||!cat)return;
+            const c=catalogoCompleto[cat];
+            if(c.productos){const p=c.productos.find(x=>x.nombre===prod);if(p)p.presentaciones.forEach(x=>prs.innerHTML+=`<option value="${x}">${x}</option>`);}
+        }
+
+        function agregarProductoAlLote(){
+            const prod=document.getElementById('modProdProducto').value;
+            const pres=document.getElementById('modProdPresentacion').value;
+            const venc=document.getElementById('modProdVencimiento').value;
+            const paq=parseInt(document.getElementById('modProdPaquetes').value)||0;
+
+            if(!prod||!pres||!venc||paq<=0){alert('⚠️ Complete todos los campos requeridos');return;}
+
+            const nuevoProducto={
+                producto:prod,
+                presentacion:pres,
+                sabor:(document.getElementById('modSaborContainer').style.display!=='none'?document.getElementById('modProdSabor').value:''),
+                vencimiento:venc,
+                paquetes:paq,
+                uniPorPaquete:parseInt(document.getElementById('modProdUniPaq').value)||6,
+                precioCosto:tipoProductoActual==='credito'?parseFloat(document.getElementById('modProdPrecioCosto').value)||0:0,
+                paquetesDanados:parseInt(document.getElementById('modProdDanados').value)||0,
+                unidadesDanadas:parseInt(document.getElementById('modProdUniDanadas').value)||0
+            };
+
+            if(tipoProductoActual==='credito'){
+                productosLoteCredito.push(nuevoProducto);
+            }else{
+                productosLoteBonificacion.push(nuevoProducto);
+            }
+
+            renderizarTablasLote();
+            cerrarModalProductoLote();
+        }
+
+        function renderizarTablasLote(){
+            renderizarTablaCredito();
+            renderizarTablaBonificacion();
+        }
+
+        function renderizarTablaCredito(){
+            const tbody=document.getElementById('tbodyCreditoItems');
+            let tp=0,tc=0;
+            if(productosLoteCredito.length===0){
+                tbody.innerHTML='<tr><td colspan="8" style="text-align:center;color:#999;">Sin productos</td></tr>';
+            }else{
+                tbody.innerHTML=productosLoteCredito.map((p,i)=>{
+                    tp+=p.paquetes;tc+=p.paquetes*p.precioCosto;
+                    return `<tr>
+                        <td>${p.producto}</td><td>${p.presentacion}</td><td>${p.sabor||'-'}</td><td>${p.vencimiento}</td>
+                        <td>${p.paquetes}</td><td>${p.precioCosto.toFixed(2)}</td><td><strong>${(p.paquetes*p.precioCosto).toFixed(2)}</strong></td>
+                        <td><button class="btn btn-xs btn-danger" onclick="eliminarProductoLote('credito',${i})">🗑️</button></td>
+                    </tr>`;
+                }).join('');
+            }
+            document.getElementById('totalPaqCredito').textContent=tp;
+            document.getElementById('totalCostoCredito').textContent=tc.toFixed(2);
+        }
+
+        function renderizarTablaBonificacion(){
+            const tbody=document.getElementById('tbodyBonificacionItems');
+            let tp=0;
+            if(productosLoteBonificacion.length===0){
+                tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:#999;">Sin productos</td></tr>';
+            }else{
+                tbody.innerHTML=productosLoteBonificacion.map((p,i)=>{
+                    tp+=p.paquetes;
+                    return `<tr>
+                        <td>${p.producto}</td><td>${p.presentacion}</td><td>${p.sabor||'-'}</td><td>${p.vencimiento}</td><td>${p.paquetes}</td>
+                        <td><button class="btn btn-xs btn-danger" onclick="eliminarProductoLote('bonificacion',${i})">🗑️</button></td>
+                    </tr>`;
+                }).join('');
+            }
+            document.getElementById('totalPaqBonificacion').textContent=tp;
+        }
+
+        function eliminarProductoLote(tipo,indice){
+            if(tipo==='credito'){productosLoteCredito.splice(indice,1);}
+            else{productosLoteBonificacion.splice(indice,1);}
+            renderizarTablasLote();
+        }
+
+        function registrarLote(){
+            const placa=document.getElementById('lotePlaca').value.trim();
+            const refEnvio=document.getElementById('loteRefEnvio').value.trim();
+            const fechaLlegada=document.getElementById('loteFechaLlegada').value;
+            const horaLlegada=document.getElementById('loteHoraLlegada').value||'00:00';
+            const observaciones=document.getElementById('loteObservaciones').value.trim();
+            const msg=document.getElementById('loteMsg');
+
+            if(!placa||!fechaLlegada||(productosLoteCredito.length===0&&productosLoteBonificacion.length===0)){
+                msg.innerHTML='❌ Complete placa, fecha y agregue al menos un producto';
+                msg.style.color='red';return;
+            }
+
+            // Generar número de lote automático
+            db.collection('lotes').orderBy('numeroLote', 'desc').limit(1).get().then(snap => {
+                let numeroLote = 1;
+                if (!snap.empty) {
+                    const ultimoLote = snap.docs[0].data();
+                    numeroLote = (ultimoLote.numeroLote || 0) + 1;
+                }
+
+                const totalPaqCredito=productosLoteCredito.reduce((s,p)=>s+p.paquetes,0);
+                const totalPaqBonificacion=productosLoteBonificacion.reduce((s,p)=>s+p.paquetes,0);
+                const totalCostoCredito=productosLoteCredito.reduce((s,p)=>s+(p.paquetes*p.precioCosto),0);
+
+                const loteData={
+                    numeroLote,
+                    placa,refEnvio,fechaLlegada,horaLlegada,observaciones,
+                    productosCredito:productosLoteCredito,
+                    productosBonificacion:productosLoteBonificacion,
+                    totalPaquetesCredito:totalPaqCredito,
+                    totalPaquetesBonificacion:totalPaqBonificacion,
+                    totalCostoCredito,
+                    estado:'registrado',
+                    fecha:firebase.firestore.FieldValue.serverTimestamp(),
+                    fechaStr:new Date().toISOString().split('T')[0],
+                    hora:horaLlegada
+                };
+
+                const batch=db.batch();
+                const loteRef=db.collection('lotes').doc();
+                batch.set(loteRef,loteData);
+
+                // Agregar productos a inventario
+                productosLoteCredito.forEach(p=>{
+                    const invRef=db.collection('inventario').doc();
+                    const totalU = p.paquetes * p.uniPorPaquete;
+                    const danadasU = (p.paquetesDanados * p.uniPorPaquete) + p.unidadesDanadas;
+                    const stockU = Math.max(0, totalU - danadasU);
+                    const stockP = Math.floor(stockU / p.uniPorPaquete);
+                    
+                    batch.set(invRef,{
+                        tipo:'ingreso',categoria:obtenerCategoriaProducto(p.producto),
+                        producto:p.producto,presentacion:p.presentacion,sabor:p.sabor||'',
+                        vencimiento:p.vencimiento,paquetes:p.paquetes,uniPorPaquete:p.uniPorPaquete,
+                        totalUnidades:totalU,paquetesDanados:p.paquetesDanados,
+                        unidadesDanadas:p.unidadesDanadas,stockPaquetes:stockP,
+                        stockUnidades:stockU,
+                        precioCosto:p.precioCosto,bonificacion:false,loteId:loteRef.id,numeroLote,
+                        danado:danadasU > 0,observacion:'',ciudad:'Santa Cruz',
+                        fechaStr:loteData.fechaStr,hora:loteData.hora,
+                        fecha:firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                });
+
+                productosLoteBonificacion.forEach(p=>{
+                    const invRef=db.collection('inventario').doc();
+                    const totalU = p.paquetes * p.uniPorPaquete;
+                    const danadasU = (p.paquetesDanados * p.uniPorPaquete) + p.unidadesDanadas;
+                    const stockU = Math.max(0, totalU - danadasU);
+                    const stockP = Math.floor(stockU / p.uniPorPaquete);
+
+                    batch.set(invRef,{
+                        tipo:'ingreso',categoria:obtenerCategoriaProducto(p.producto),
+                        producto:p.producto,presentacion:p.presentacion,sabor:p.sabor||'',
+                        vencimiento:p.vencimiento,paquetes:p.paquetes,uniPorPaquete:p.uniPorPaquete,
+                        totalUnidades:totalU,paquetesDanados:p.paquetesDanados,
+                        unidadesDanadas:p.unidadesDanadas,stockPaquetes:stockP,
+                        stockUnidades:stockU,
+                        precioCosto:0,bonificacion:true,loteId:loteRef.id,numeroLote,
+                        danado:danadasU > 0,observacion:'',ciudad:'Santa Cruz',
+                        fechaStr:loteData.fechaStr,hora:loteData.hora,
+                        fecha:firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                });
+
+                batch.commit().then(()=>{
+                    msg.innerHTML=`✅ Lote #${numeroLote} (${loteData.placa}) - ${totalPaqCredito} crédito + ${totalPaqBonificacion} bonif = ${(totalPaqCredito+totalPaqBonificacion)} paq`;
+                    msg.style.color='green';
+                    limpiarFormLote();cargarStock();
+                }).catch(e=>{msg.innerHTML='❌ '+e.message;msg.style.color='red';});
+            }).catch(e=>{msg.innerHTML='❌ Error al obtener número de lote: '+e.message;msg.style.color='red';});
+        }
+
+        function limpiarFormLote(){
+            document.getElementById('lotePlaca').value='';
+            document.getElementById('loteRefEnvio').value='';
+            document.getElementById('loteFechaLlegada').value='';
+            document.getElementById('loteHoraLlegada').value='';
+            document.getElementById('loteObservaciones').value='';
+            productosLoteCredito=[];
+            productosLoteBonificacion=[];
+            renderizarTablasLote();
+            document.getElementById('loteMsg').innerHTML='';
+        }
+
+        // ==================== INICIALIZAR ====================
+        document.addEventListener('DOMContentLoaded',()=>{
+            renderizarTablaSalida();
+            document.getElementById('btnAgregarProductoLote').onclick=agregarProductoAlLote;
+        });
+        document.getElementById('loginPassword').addEventListener('keypress',function(e){if(e.key==='Enter')login();});
+
+        // ==================== DESCARGAR REPORTE EXCEL ====================
+        async function descargarReporteExcel() {
+            try {
+                const msg = document.getElementById('loteMsg');
+                msg.innerHTML = '⏳ Generando reporte...';
+                msg.style.color = 'blue';
+
+                const [inventarioSnap, salidasSnap] = await Promise.all([
+                    db.collection('inventario').get(),
+                    db.collection('salidas').get()
+                ]);
+
+                const wb = new ExcelJS.Workbook();
+
+                // ============ HOJA 1: RESUMEN POR PRODUCTO ============
+                const wsResumen = wb.addWorksheet('Resumen');
+                wsResumen.columns = [
+                    { header: 'Producto', key: 'producto', width: 20 },
+                    { header: 'Presentación', key: 'presentacion', width: 15 },
+                    { header: 'Entrada (Paquetes)', key: 'entrada', width: 18 },
+                    { header: 'Entrada (Unidades)', key: 'entradaUni', width: 18 },
+                    { header: 'Vendido (Paquetes)', key: 'vendido', width: 18 },
+                    { header: 'Inventario (Paquetes)', key: 'inventario', width: 18 },
+                    { header: 'Inventario (Unidades)', key: 'inventarioUni', width: 18 },
+                    { header: 'Dañados', key: 'danados', width: 12 }
+                ];
+
+                const resumen = {};
+
+                // Procesar ingresos
+                inventarioSnap.forEach(doc => {
+                    const d = doc.data();
+                    const key = `${d.producto}|${d.presentacion}`;
+                    if (!resumen[key]) {
+                        resumen[key] = {
+                            producto: d.producto,
+                            presentacion: d.presentacion,
+                            entrada: 0,
+                            entradaUni: 0,
+                            vendido: 0,
+                            inventario: 0,
+                            inventarioUni: 0,
+                            danados: 0
+                        };
+                    }
+                    resumen[key].entrada += d.paquetes || 0;
+                    resumen[key].entradaUni += d.totalUnidades || 0;
+                    resumen[key].inventario += d.stockPaquetes || 0;
+                    resumen[key].inventarioUni += d.stockUnidades || 0;
+                    resumen[key].danados += d.paquetesDanados || 0;
+                });
+
+                // Procesar salidas (no se cuenta bonificación)
+                salidasSnap.forEach(doc => {
+                    const d = doc.data();
+                    if (d.productos && d.estado === 'rendido') {
+                        d.productos.forEach(p => {
+                            const key = `${p.producto}|${p.presentacion}`;
+                            if (resumen[key]) {
+                                resumen[key].vendido += p.vendido || 0;
+                            }
+                        });
+                    }
+                });
+
+                Object.values(resumen).forEach(row => {
+                    wsResumen.addRow(row);
+                });
+
+                wsResumen.getRow(1).fill = {
+                    type: 'pattern',
+                    pattern: 'solid',
+                    fgColor: { argb: 'FF1a3c5e' }
+                };
+                wsResumen.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+
+                // ============ HOJA 2: DETALLES POR LOTE ============
+                const wsLotes = wb.addWorksheet('Lotes');
+                wsLotes.columns = [
+                    { header: 'Lote #', key: 'lote', width: 10 },
+                    { header: 'Producto', key: 'producto', width: 20 },
+                    { header: 'Presentación', key: 'presentacion', width: 15 },
+                    { header: 'Sabor', key: 'sabor', width: 12 },
+                    { header: 'Vencimiento', key: 'vencimiento', width: 12 },
+                    { header: 'Paquetes Entrada', key: 'paquetesEntrada', width: 15 },
+                    { header: 'Unidades Entrada', key: 'unidadesEntrada', width: 15 },
+                    { header: 'Paquetes Disponibles', key: 'paquetesDisp', width: 15 },
+                    { header: 'Unidades Disponibles', key: 'unidadesDisp', width: 15 },
+                    { header: 'Dañados', key: 'danados', width: 12 },
+                    { header: 'Precio Costo (Bs)', key: 'precioCosto', width: 15 },
+                    { header: 'Bonificación', key: 'bonificacion', width: 12 }
+                ];
+
+                const lotes = [];
+                inventarioSnap.forEach(doc => {
+                    const d = doc.data();
+                    lotes.push({
+                        lote: d.numeroLote || '-',
+                        producto: d.producto,
+                        presentacion: d.presentacion,
+                        sabor: d.sabor || '-',
+                        vencimiento: formatearFechaCorta(d.vencimiento),
+                        paquetesEntrada: d.paquetes || 0,
+                        unidadesEntrada: d.totalUnidades || 0,
+                        paquetesDisp: d.stockPaquetes || 0,
+                        unidadesDisp: d.stockUnidades || 0,
+                        danados: d.paquetesDanados || 0,
+                        precioCosto: d.precioCosto || 0,
+                        bonificacion: d.bonificacion ? 'Sí' : 'No'
+                    });
+                });
+
+                // Ordenar por número de lote
+                lotes.sort((a, b) => {
+                    const numA = parseInt(a.lote) || 999999;
+                    const numB = parseInt(b.lote) || 999999;
+                    return numA - numB;
+                });
+
+                lotes.forEach((row, idx) => {
+                    const xlRow = wsLotes.addRow(row);
+                    const colorLote = obtenerColorLote(row.lote);
+                    const colorRGB = colorLote.replace('#', 'FF');
+                    xlRow.fill = {
+                        type: 'pattern',
+                        pattern: 'solid',
+                        fgColor: { argb: colorRGB }
+                    };
+                });
+
+                wsLotes.getRow(1).fill = {
+                    type: 'pattern',
+                    pattern: 'solid',
+                    fgColor: { argb: 'FF1a3c5e' }
+                };
+                wsLotes.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+
+                // ============ HOJA 3: MOVIMIENTOS DE VENTAS ============
+                const wsVentas = wb.addWorksheet('Ventas');
+                wsVentas.columns = [
+                    { header: 'Fecha', key: 'fecha', width: 12 },
+                    { header: 'Chofer', key: 'chofer', width: 20 },
+                    { header: 'Destino', key: 'destino', width: 15 },
+                    { header: 'Producto', key: 'producto', width: 20 },
+                    { header: 'Precio Aplicado', key: 'precio', width: 15 },
+                    { header: 'Paquetes', key: 'paquetes', width: 12 },
+                    { header: 'Total (Bs)', key: 'total', width: 12 },
+                    { header: 'Autorizado Rebaja', key: 'autor', width: 18 }
+                ];
+
+                salidasSnap.forEach(doc => {
+                    const d = doc.data();
+                    if (d.productos && d.estado === 'rendido') {
+                        d.productos.forEach(p => {
+                            // Primero los vendidos a precio normal (si quedan después de rebajas)
+                            let cantRebajada = (p.rebajas || []).reduce((s,r)=>s+r.cant, 0);
+                            let cantNormal = p.vendido - cantRebajada;
+
+                            if(cantNormal > 0) {
+                                wsVentas.addRow({
+                                    fecha: formatearFechaCorta(d.fechaStr),
+                                    chofer: d.chofer,
+                                    destino: d.destino || '-',
+                                    producto: `${p.producto} ${p.presentacion}`,
+                                    precio: p.precio,
+                                    paquetes: cantNormal,
+                                    total: (cantNormal * p.precio).toFixed(2),
+                                    autor: '-'
+                                });
+                            }
+
+                            // Luego las filas de rebajas
+                            if(p.rebajas) {
+                                p.rebajas.forEach(r => {
+                                    wsVentas.addRow({
+                                        fecha: formatearFechaCorta(d.fechaStr),
+                                        chofer: d.chofer,
+                                        destino: d.destino || '-',
+                                        producto: `${p.producto} ${p.presentacion}`,
+                                        precio: r.precio,
+                                        paquetes: r.cant,
+                                        total: (r.cant * r.precio).toFixed(2),
+                                        autor: r.autor || 'S/A'
+                                    });
+                                });
+                            }
+                        });
+                    }
+                });
+
+                wsVentas.getRow(1).fill = {
+                    type: 'pattern',
+                    pattern: 'solid',
+                    fgColor: { argb: 'FF1a3c5e' }
+                };
+                wsVentas.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+
+                // ============ HOJA 4: DEUDORES PENDIENTES ============
+                const wsDeudores = wb.addWorksheet('Deudores');
+                wsDeudores.columns = [
+                    { header: 'Cliente', key: 'cliente', width: 25 },
+                    { header: 'Nota/Recibo', key: 'nota', width: 15 },
+                    { header: 'Monto Deuda (Bs)', key: 'monto', width: 18 },
+                    { header: 'Compromiso', key: 'compromiso', width: 15 },
+                    { header: 'Celular', key: 'cel', width: 15 },
+                    { header: 'Fecha Salida', key: 'fecha', width: 15 }
+                ];
+
+                const deudoresSnap = await db.collection('rendiciones').where('pagos.credito', '>', 0).get();
+                deudoresSnap.forEach(doc => {
+                    const d = doc.data();
+                    if(d.cliente && d.cliente.estadoPago !== 'pagado') {
+                        wsDeudores.addRow({
+                            cliente: d.cliente.nombre,
+                            nota: d.cliente.nota || '-',
+                            monto: d.pagos.credito,
+                            compromiso: formatearFechaCorta(d.cliente.fechaPago),
+                            cel: d.cliente.cel1,
+                            fecha: formatearFechaCorta(d.fechaStr)
+                        });
+                    }
+                });
+
+                wsDeudores.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE74C3C' } };
+                wsDeudores.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+
+                // Descargar
+                const fecha = new Date().toISOString().split('T')[0];
+                const buf = await wb.xlsx.writeBuffer();
+                const blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `Reporte_Stock_${fecha}.xlsx`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+
+                msg.innerHTML = '✅ Reporte descargado exitosamente';
+                msg.style.color = 'green';
+                setTimeout(() => msg.innerHTML = '', 3000);
+            } catch (e) {
+                const msg = document.getElementById('loteMsg');
+                msg.innerHTML = '❌ Error al generar reporte: ' + e.message;
+                msg.style.color = 'red';
+            }
+        }
+
+        // ==================== DESCARGAR REPORTE DEUDORES ====================
+        async function descargarReporteDeudores() {
+            try {
+                const snap = await db.collection('rendiciones').where('pagos.credito', '>', 0).get();
+                let deudas = [];
+                snap.forEach(doc => {
+                    const d = doc.data();
+                    if(d.cliente && d.cliente.estadoPago !== 'pagado') {
+                        deudas.push(d);
+                    }
+                });
+
+                if(deudas.length === 0) { alert('No hay deudas pendientes para exportar'); return; }
+
+                const wb = new ExcelJS.Workbook();
+                const ws = wb.addWorksheet('Deudores');
+
+                ws.columns = [
+                    { header: 'Fecha Registro', key: 'fecha', width: 15 },
+                    { header: 'Nota/Recibo', key: 'nota', width: 15 },
+                    { header: 'Cliente', key: 'cliente', width: 25 },
+                    { header: 'Monto Deuda (Bs)', key: 'monto', width: 18 },
+                    { header: 'Celular 1', key: 'cel1', width: 15 },
+                    { header: 'Celular 2', key: 'cel2', width: 15 },
+                    { header: 'Dirección', key: 'dir', width: 30 },
+                    { header: 'Fecha Compromiso', key: 'compromiso', width: 18 },
+                    { header: 'Estado', key: 'estado', width: 15 }
+                ];
+
+                const hoy = new Date().toISOString().split('T')[0];
+                deudas.forEach(d => {
+                    ws.addRow({
+                        fecha: d.fechaStr,
+                        nota: d.cliente.nota || 'S/N',
+                        cliente: d.cliente.nombre,
+                        monto: d.pagos.credito,
+                        cel1: d.cliente.cel1,
+                        cel2: d.cliente.cel2 || '-',
+                        dir: d.cliente.direccion,
+                        compromiso: d.cliente.fechaPago || '-',
+                        estado: (d.cliente.fechaPago && d.cliente.fechaPago < hoy) ? 'VENCIDO' : 'PENDIENTE'
+                    });
+                });
+
+                ws.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE74C3C' } };
+                ws.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+
+                const buf = await wb.xlsx.writeBuffer();
+                const blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `Reporte_Deudores_${new Date().toISOString().split('T')[0]}.xlsx`;
+                a.click();
+            } catch (e) {
+                alert('Error al generar reporte de deudores: ' + e.message);
+            }
+        }
+
+        function formatearFechaCorta(fechaStr) {
+            if (!fechaStr) return '-';
+            const meses = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+            // Intentar parsear fecha (YYYY-MM-DD)
+            const partes = fechaStr.split('-');
+            if (partes.length === 3) {
+                const d = parseInt(partes[2]);
+                const m = parseInt(partes[1]) - 1;
+                const a = partes[0].slice(-2);
+                return `${String(d).padStart(2, '0')}-${meses[m] || '???'}-${a}`;
+            }
+            return fechaStr;
+        }
+
+        logDebug('🚀 Sistema v3.0 listo');
+    </script>
 </body>
 </html>
